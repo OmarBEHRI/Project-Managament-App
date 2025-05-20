@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!-- Error state -->
+    <item android:color="@color/error" app:state_error="true"/>
+    <!-- Focused state -->
+    <item android:color="@color/secondary" android:state_focused="true"/>
+    <!-- Hovered state -->
+    <item android:color="@color/primary" android:state_hovered="true"/>
+    <!-- Default state -->
+    <item android:color="@color/text_hint"/>
+</selector>

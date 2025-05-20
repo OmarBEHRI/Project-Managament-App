@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_number": "434858540199",
+    "firebase_url": "https://project-management-f7239-default-rtdb.firebaseio.com",
+    "project_id": "project-management-f7239",
+    "storage_bucket": "project-management-f7239.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:434858540199:android:fdf2254167f3001b1e2f82",
+        "android_client_info": {
+          "package_name": "com.example.projectmanager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "434858540199-4a3dkg3dv8l93pg0ri5n0oqutn0k91ht.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.projectmanager",
+            "certificate_hash": "b17134b2033608d02ca55bdd4befb0bf994aa63b"
+          }
+        },
+        {
+          "client_id": "434858540199-b35qphlo9g6270u4d9mqfmnd2ihf2nik.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.projectmanager",
+            "certificate_hash": "0dac2decff924e87c97332969d6cb117321960cb"
+          }
+        },
+        {
+          "client_id": "434858540199-c50ggcroqib7itn1ba4sacdkoem1maes.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAiWjearRi4eQu4e8jd5w4_DMaECncM1sU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "434858540199-c50ggcroqib7itn1ba4sacdkoem1maes.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

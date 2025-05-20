@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors - Light Theme -->
+    <color name="primary">#1976D2</color>
+    <color name="primary_dark">#1565C0</color>
+    <color name="primary_light">#BBDEFB</color>
+    <color name="secondary">#FFA000</color>
+    <color name="secondary_dark">#FF8F00</color>
+    <color name="secondary_light">#FFECB3</color>
+
+    <!-- Neutral Colors - Light Theme -->
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="error">#B00020</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#242424</color>
+    <color name="error_light">#CF6679</color>
+
+    <!-- Text Colors - Light Theme -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#BDBDBD</color>
+
+    <!-- Text Colors - Dark Theme -->
+    <color name="text_primary_light">#FFFFFF</color>
+    <color name="text_secondary_light">#B3FFFFFF</color> <!-- 70% white -->
+    <color name="text_primary_dark">#000000</color>
+    <color name="text_hint_dark">#80FFFFFF</color> <!-- 50% white -->
+
+    <!-- UI Feedback -->
+    <color name="ripple_light">#1F000000</color>
+    <color name="ripple_dark">#33FFFFFF</color>
+
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#1976D2</color>
+    <color name="gradient_middle">#1E88E5</color>
+    <color name="gradient_end">#2196F3</color>
+</resources>
