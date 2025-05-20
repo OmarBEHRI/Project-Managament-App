@@ -4,6 +4,7 @@ import com.example.projectmanager.data.local.dao.TaskDao
 import com.example.projectmanager.data.local.entity.TaskEntity
 import com.example.projectmanager.data.model.Comment
 import com.example.projectmanager.data.model.Task
+import com.example.projectmanager.data.model.TaskPriority
 import com.example.projectmanager.data.model.TaskStatus
 import com.example.projectmanager.util.Resource
 import com.google.firebase.firestore.FirebaseFirestore
@@ -53,42 +54,90 @@ class TaskRepositoryImpl @Inject constructor(
 
     override fun getTasksByProject(projectId: String): Flow<List<Task>> = flow {
         try {
+            println("Fetching tasks for project ID: $projectId")
+            
+            // Get tasks from Firestore
             val snapshot = tasksCollection
                 .whereEqualTo("project_id", projectId)
-                .orderBy("dueDate", Query.Direction.ASCENDING)
                 .get()
                 .await()
-            val tasks = snapshot.toObjects(Task::class.java)
-            emit(tasks)
+            
+            // Convert to Task objects
+            val tasks = snapshot.documents.mapNotNull { doc ->
+                try {
+                    // Manually map Firestore document to Task object
+                    Task(
+                        id = doc.id,
+                        title = doc.getString("title") ?: "",
+                        description = doc.getString("description") ?: "",
+                        projectId = doc.getString("project_id") ?: "",
+                        assignedTo = (doc.get("assigned_to") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        createdBy = doc.getString("created_by") ?: "",
+                        status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.TODO,
+                        priority = doc.getString("priority")?.let { TaskPriority.valueOf(it) } ?: TaskPriority.MEDIUM,
+                        dueDate = doc.getDate("due_date"),
+                        isCompleted = doc.getBoolean("completed") ?: false,
+                        estimatedHours = doc.getDouble("estimated_hours")?.toFloat()
+                    )
+                } catch (e: Exception) {
+                    println("Error mapping document ${doc.id}: ${e.message}")
+                    null
+                }
+            }
+            
+            println("Found ${tasks.size} tasks for project $projectId")
+            tasks.forEach { task ->
+                println("Task: ${task.id}, ${task.title}, assigned to: ${task.assignedTo}")
+            }
+            
+            // Sort tasks by due date
+            val sortedTasks = tasks.sortedBy { it.dueDate }
+            emit(sortedTasks)
         } catch (e: Exception) {
+            println("Error fetching tasks for project $projectId: ${e.message}")
+            e.printStackTrace()
             emit(emptyList())
         }
     }
 
     override fun getTasksByUser(userId: String): Flow<List<Task>> = flow {
         try {
+            // Debug log to help troubleshoot
+            println("Fetching tasks for user ID: $userId")
+            
+            // Use the field name as it appears in Firestore
+            // The PropertyName annotation in Task.kt indicates the field is 'assigned_to' in Firestore
             val snapshot = tasksCollection
-                .whereEqualTo("assigned_to", userId)
-                .orderBy("dueDate", Query.Direction.ASCENDING)
+                .whereArrayContains("assigned_to", userId) // Using the correct field name in Firestore
                 .get()
                 .await()
+            
             val tasks = snapshot.toObjects(Task::class.java)
-            emit(tasks)
+            println("Found ${tasks.size} tasks for user $userId")
+            
+            // Sort in memory instead of in the query
+            val sortedTasks = tasks.sortedBy { it.dueDate }
+            emit(sortedTasks)
         } catch (e: Exception) {
+            println("Error fetching tasks for user $userId: ${e.message}")
             emit(emptyList())
         }
     }
 
     override fun getPendingTasks(): Flow<List<Task>> = flow {
         try {
+            println("Fetching pending tasks")
             val snapshot = tasksCollection
-                .whereEqualTo("isCompleted", false)
-                .orderBy("dueDate", Query.Direction.ASCENDING)
+                .whereEqualTo("completed", false) // Using the correct field name in Firestore
                 .get()
                 .await()
             val tasks = snapshot.toObjects(Task::class.java)
-            emit(tasks)
+            println("Found ${tasks.size} pending tasks")
+            // Sort in memory instead of in the query to avoid composite index requirements
+            val sortedTasks = tasks.sortedBy { it.dueDate }
+            emit(sortedTasks)
         } catch (e: Exception) {
+            println("Error fetching pending tasks: ${e.message}")
             emit(emptyList())
         }
     }
@@ -119,16 +168,64 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun createTask(task: Task): Resource<Task> = try {
         val documentRef = tasksCollection.document()
         val newTask = task.copy(id = documentRef.id)
-        documentRef.set(newTask).await()
+        
+        // Convert the task to a map with the correct field names for Firestore
+        val taskMap = mapOf(
+            "id" to newTask.id,
+            "title" to newTask.title,
+            "description" to newTask.description,
+            "project_id" to newTask.projectId,
+            "assigned_to" to newTask.assignedTo,
+            "created_by" to newTask.createdBy,
+            "status" to newTask.status,
+            "priority" to newTask.priority,
+            "due_date" to newTask.dueDate,
+            "createdAt" to newTask.createdAt,
+            "updatedAt" to newTask.updatedAt,
+            "completed" to newTask.isCompleted,  // Using 'completed' instead of 'isCompleted'
+            "estimated_hours" to newTask.estimatedHours,
+            "tags" to newTask.tags
+        )
+        
+        // Log the task being created
+        println("Creating task with ID: ${newTask.id}, assigned to: ${newTask.assignedTo}")
+        println("Task details: title=${newTask.title}, project=${newTask.projectId}, status=${newTask.status}")
+        
+        documentRef.set(taskMap).await()
         Resource.success(newTask)
     } catch (e: Exception) {
+        println("Error creating task: ${e.message}")
+        e.printStackTrace()
         Resource.error(e.message ?: "Failed to create task")
     }
 
     override suspend fun updateTask(task: Task): Resource<Task> = try {
-        tasksCollection.document(task.id).set(task).await()
+        // Convert the task to a map with the correct field names for Firestore
+        val taskMap = mapOf(
+            "id" to task.id,
+            "title" to task.title,
+            "description" to task.description,
+            "project_id" to task.projectId,
+            "assigned_to" to task.assignedTo,
+            "created_by" to task.createdBy,
+            "status" to task.status,
+            "priority" to task.priority,
+            "due_date" to task.dueDate,
+            "createdAt" to task.createdAt,
+            "updatedAt" to task.updatedAt,
+            "completed" to task.isCompleted,  // Using 'completed' instead of 'isCompleted'
+            "estimated_hours" to task.estimatedHours,
+            "tags" to task.tags
+        )
+        
+        println("Updating task with ID: ${task.id}, assigned to: ${task.assignedTo}")
+        println("Task details: title=${task.title}, project=${task.projectId}, status=${task.status}")
+        
+        tasksCollection.document(task.id).set(taskMap).await()
         Resource.success(task)
     } catch (e: Exception) {
+        println("Error updating task: ${e.message}")
+        e.printStackTrace()
         Resource.error(e.message ?: "Failed to update task")
     }
 
@@ -141,12 +238,14 @@ class TaskRepositoryImpl @Inject constructor(
 
     override suspend fun toggleTaskCompletion(taskId: String, completed: Boolean): Resource<Boolean> = try {
         val updates = mapOf(
-            "isCompleted" to completed,
-            "completedAt" to if (completed) Date() else null
+            "completed" to completed,  // Using the correct field name in Firestore
+            "completed_at" to if (completed) Date() else null
         )
+        println("Toggling task $taskId completion to $completed")
         tasksCollection.document(taskId).update(updates).await()
         Resource.success(true)
     } catch (e: Exception) {
+        println("Error toggling task completion: ${e.message}")
         Resource.error(e.message ?: "Failed to update task completion")
     }
 
@@ -184,15 +283,17 @@ class TaskRepositoryImpl @Inject constructor(
 
     override suspend fun markTaskAsComplete(taskId: String): Resource<Unit> = try {
         val updates = mapOf(
-            "isCompleted" to true,
-            "completedAt" to Date(),
+            "completed" to true,  // Using 'completed' instead of 'isCompleted'
+            "completed_at" to Date(),  // Using 'completed_at' instead of 'completedAt'
             "status" to TaskStatus.COMPLETED
         )
+        println("Marking task $taskId as complete")
         tasksCollection.document(taskId)
             .update(updates)
             .await()
         Resource.success(Unit)
     } catch (e: Exception) {
+        println("Error marking task as complete: ${e.message}")
         Resource.error(e.message ?: "Failed to mark task as complete")
     }
 

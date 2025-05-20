@@ -86,7 +86,13 @@ class ProjectViewModel @Inject constructor(
     private fun loadProjectTasks(projectId: String) {
         viewModelScope.launch {
             try {
+                println("ProjectViewModel: Loading tasks for project $projectId")
                 taskRepository.getTasksByProject(projectId).collect { tasks ->
+                    println("ProjectViewModel: Received ${tasks.size} tasks for project $projectId")
+                    tasks.forEach { task ->
+                        println("ProjectViewModel: Task ${task.id}: ${task.title}, assigned to: ${task.assignedTo}")
+                    }
+                    
                     _uiState.update {
                         it.copy(
                             tasks = tasks,
@@ -94,8 +100,12 @@ class ProjectViewModel @Inject constructor(
                             error = null
                         )
                     }
+                    
+                    println("ProjectViewModel: Updated UI state with ${tasks.size} tasks")
                 }
             } catch (e: Exception) {
+                println("ProjectViewModel: Error loading tasks: ${e.message}")
+                e.printStackTrace()
                 _uiState.update {
                     it.copy(
                         isLoading = false,

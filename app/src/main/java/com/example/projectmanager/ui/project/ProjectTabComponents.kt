@@ -200,6 +200,14 @@ fun ProjectTasksTabComponent(
     tasks: List<Task>,
     onTaskClick: (String) -> Unit
 ) {
+    // Add debug logging
+    LaunchedEffect(tasks) {
+        println("ProjectTasksTabComponent: Received ${tasks.size} tasks")
+        tasks.forEach { task ->
+            println("ProjectTasksTabComponent: Task ${task.id}: ${task.title}, assigned to: ${task.assignedTo}")
+        }
+    }
+    
     var filterStatus by remember { mutableStateOf<TaskStatus?>(null) }
     
     Column(

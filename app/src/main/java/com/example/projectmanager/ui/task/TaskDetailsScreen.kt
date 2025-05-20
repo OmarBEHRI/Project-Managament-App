@@ -217,7 +217,7 @@ fun TaskDetailsScreen(
 fun TaskHeader(
     task: Task,
     onStatusChange: (TaskStatus) -> Unit,
-    onPriorityChange: (Priority) -> Unit
+    onPriorityChange: (TaskPriority) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -256,10 +256,10 @@ fun TaskHeader(
                 leadingIcon = {
                     Icon(
                         imageVector = when (task.priority) {
-                            Priority.LOW -> Icons.Default.ArrowDownward
-                            Priority.MEDIUM -> Icons.Default.Remove
-                            Priority.HIGH -> Icons.Default.ArrowUpward
-                            Priority.URGENT -> Icons.Default.PriorityHigh
+                            TaskPriority.LOW -> Icons.Default.ArrowDownward
+                            TaskPriority.MEDIUM -> Icons.Default.Remove
+                            TaskPriority.HIGH -> Icons.Default.ArrowUpward
+                            TaskPriority.URGENT -> Icons.Default.PriorityHigh
                         },
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)

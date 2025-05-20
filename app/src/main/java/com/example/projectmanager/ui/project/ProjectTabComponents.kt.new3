@@ -1,0 +1,165 @@
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddMemberDialog(
+    searchQuery: String,
+    userSuggestions: List<User>,
+    onSearchQueryChange: (String) -> Unit,
+    onUserSelected: (User) -> Unit,
+    onAddMember: (User, ProjectRole) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedUser by remember { mutableStateOf<User?>(null) }
+    var selectedRole by remember { mutableStateOf(ProjectRole.MEMBER) }
+    
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Add Team Member",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Search field
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Search by name or email") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                    },
+                    singleLine = true
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Search results
+                if (userSuggestions.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        items(userSuggestions) { user ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { 
+                                        selectedUser = user
+                                        onUserSelected(user)
+                                    }
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // User avatar
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = user.displayName.take(1).uppercase(),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                
+                                // User info
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 8.dp)
+                                ) {
+                                    Text(
+                                        text = user.displayName,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        text = user.email,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                
+                                // Selection indicator
+                                RadioButton(
+                                    selected = selectedUser?.id == user.id,
+                                    onClick = { 
+                                        selectedUser = user
+                                        onUserSelected(user)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Role selection (only shown when a user is selected)
+                if (selectedUser != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "Select Role",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ProjectRole.values().filter { it != ProjectRole.OWNER }.forEach { role ->
+                            FilterChip(
+                                selected = selectedRole == role,
+                                onClick = { selectedRole = role },
+                                label = { Text(role.name) }
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    Button(
+                        onClick = { 
+                            selectedUser?.let { user ->
+                                onAddMember(user, selectedRole)
+                            }
+                        },
+                        enabled = selectedUser != null
+                    ) {
+                        Text("Add")
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,255 @@
+package com.example.projectmanager.ui.project
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import com.example.projectmanager.data.model.*
+import java.text.SimpleDateFormat
+import java.util.*
+
+// Overview tab showing project summary
+@Composable
+fun ProjectOverviewTab(project: Project) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Project metrics
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Project Metrics",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Budget metrics
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        MetricItem(
+                            title = "Budget",
+                            value = "${project.budgetCurrency} ${project.budgetAmount}",
+                            icon = Icons.Outlined.AttachMoney
+                        )
+                        
+                        MetricItem(
+                            title = "Actual Cost",
+                            value = "${project.budgetCurrency} ${project.actualCost}",
+                            icon = Icons.Outlined.Receipt
+                        )
+                        
+                        MetricItem(
+                            title = "Variance",
+                            value = "${project.budgetCurrency} ${project.budgetAmount - project.actualCost}",
+                            icon = Icons.Outlined.TrendingUp,
+                            valueColor = if (project.budgetAmount >= project.actualCost) 
+                                Color(0xFF4CAF50) else Color(0xFFF44336)
+                        )
+                    }
+                    
+                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    
+                    // Time metrics
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        MetricItem(
+                            title = "Est. Hours",
+                            value = "${project.estimatedHours}h",
+                            icon = Icons.Outlined.Timer
+                        )
+                        
+                        MetricItem(
+                            title = "Actual Hours",
+                            value = "${project.actualHours}h",
+                            icon = Icons.Outlined.HourglassBottom
+                        )
+                        
+                        MetricItem(
+                            title = "Efficiency",
+                            value = if (project.estimatedHours > 0) 
+                                "${(project.estimatedHours.toFloat() / project.actualHours.toFloat() * 100).toInt()}%" 
+                            else "N/A",
+                            icon = Icons.Outlined.Speed,
+                            valueColor = if (project.estimatedHours >= project.actualHours) 
+                                Color(0xFF4CAF50) else Color(0xFFF44336)
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Project details
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Project Details",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    DetailRow(
+                        label = "Status",
+                        value = project.status.name,
+                        icon = Icons.Outlined.Info
+                    )
+                    
+                    DetailRow(
+                        label = "Priority",
+                        value = project.priority.name,
+                        icon = Icons.Outlined.PriorityHigh
+                    )
+                    
+                    DetailRow(
+                        label = "Start Date",
+                        value = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(project.startDate),
+                        icon = Icons.Outlined.CalendarToday
+                    )
+                    
+                    DetailRow(
+                        label = "Due Date",
+                        value = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(project.dueDate),
+                        icon = Icons.Outlined.Event
+                    )
+                    
+                    DetailRow(
+                        label = "Created By",
+                        value = project.createdBy,
+                        icon = Icons.Outlined.Person
+                    )
+                }
+            }
+        }
+        
+        // Project description
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Description",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = project.description.ifEmpty { "No description provided" },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetricItem(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall
+        )
+        
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = valueColor,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun DetailRow(
+    label: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+    }
+}

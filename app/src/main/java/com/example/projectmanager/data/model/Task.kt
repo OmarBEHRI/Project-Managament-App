@@ -22,7 +22,7 @@ data class Task(
     @get:PropertyName("created_by")
     val createdBy: String = "",
     val status: TaskStatus = TaskStatus.TODO,
-    val priority: Priority = Priority.MEDIUM,
+    val priority: TaskPriority = TaskPriority.MEDIUM,
     @get:PropertyName("start_date")
     val startDate: Date? = null,
     @get:PropertyName("due_date")

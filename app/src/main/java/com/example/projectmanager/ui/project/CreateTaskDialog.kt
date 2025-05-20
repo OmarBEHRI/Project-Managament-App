@@ -28,7 +28,7 @@ fun CreateTaskDialog(
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var priority by remember { mutableStateOf(Priority.MEDIUM) }
+    var priority by remember { mutableStateOf(TaskPriority.MEDIUM) }
     var dueDate by remember { mutableStateOf<Date?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedMemberIds by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -96,17 +96,17 @@ fun CreateTaskDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Priority.values().forEach { priorityOption ->
+                    TaskPriority.values().forEach { priorityOption ->
                         FilterChip(
                             selected = priority == priorityOption,
                             onClick = { priority = priorityOption },
                             label = { Text(priorityOption.name) },
                             leadingIcon = {
                                 val icon = when (priorityOption) {
-                                    Priority.LOW -> Icons.Default.ArrowDownward
-                                    Priority.MEDIUM -> Icons.Default.Remove
-                                    Priority.HIGH -> Icons.Default.ArrowUpward
-                                    Priority.URGENT -> Icons.Default.PriorityHigh
+                                    TaskPriority.LOW -> Icons.Default.ArrowDownward
+                                    TaskPriority.MEDIUM -> Icons.Default.Remove
+                                    TaskPriority.HIGH -> Icons.Default.ArrowUpward
+                                    TaskPriority.URGENT -> Icons.Default.PriorityHigh
                                 }
                                 Icon(icon, contentDescription = null)
                             }
@@ -216,12 +216,21 @@ fun CreateTaskDialog(
                     
                     Button(
                         onClick = {
+                            // Make sure we have at least one assignee
+                            // If no members are selected, assign to the current user (project owner)
+                            val assignees = if (selectedMemberIds.isEmpty()) {
+                                // If no specific assignees, assign to project owner
+                                listOf(project.ownerId)
+                            } else {
+                                selectedMemberIds
+                            }
+                            
                             val newTask = Task(
                                 title = title,
                                 description = description,
                                 projectId = project.id,
-                                assignedTo = selectedMemberIds,
-                                createdBy = "", // This will be set by the repository
+                                assignedTo = assignees,
+                                createdBy = project.ownerId, // Set the creator to the project owner
                                 status = TaskStatus.TODO,
                                 priority = priority,
                                 dueDate = dueDate,

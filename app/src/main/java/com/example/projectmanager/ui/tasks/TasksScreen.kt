@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.projectmanager.data.model.Task
 import com.example.projectmanager.data.model.TaskStatus
-import com.example.projectmanager.data.model.Priority
+import com.example.projectmanager.data.model.TaskPriority
 import com.example.projectmanager.ui.components.ProjectDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
@@ -52,17 +52,11 @@ fun TasksScreen(
                     IconButton(onClick = { showFilterSheet = true }) {
                         Icon(Icons.Default.FilterList, contentDescription = "Filter")
                     }
-                    IconButton(onClick = { showCreateDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Task")
-                    }
+                    // Add Task icon removed as requested
                 }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Create Task")
-            }
-        }
+        // Floating action button removed as requested
     ) { padding ->
         Box(
             modifier = Modifier
@@ -221,10 +215,10 @@ fun TaskList(
                                         .size(12.dp)
                                         .background(
                                             color = when (task.priority) {
-                                                Priority.LOW -> MaterialTheme.colorScheme.tertiary
-                                                Priority.MEDIUM -> MaterialTheme.colorScheme.secondary
-                                                Priority.HIGH -> MaterialTheme.colorScheme.primary
-                                                Priority.URGENT -> MaterialTheme.colorScheme.error
+                                                TaskPriority.LOW -> MaterialTheme.colorScheme.tertiary
+                                                TaskPriority.MEDIUM -> MaterialTheme.colorScheme.secondary
+                                                TaskPriority.HIGH -> MaterialTheme.colorScheme.primary
+                                                TaskPriority.URGENT -> MaterialTheme.colorScheme.error
                                             },
                                             shape = androidx.compose.foundation.shape.CircleShape
                                         )
@@ -301,20 +295,15 @@ fun EmptyTasksMessage(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No tasks yet",
+            text = "No tasks assigned to you",
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Create your first task to get started",
+            text = "Tasks assigned to you will appear here",
             style = MaterialTheme.typography.bodyMedium
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onCreateClick) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Create Task")
-        }
+        // Create Task button removed as requested
     }
 }
 
@@ -327,7 +316,7 @@ fun CreateTaskDialog(
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf<Date?>(null) }
-    var priority by remember { mutableStateOf(Priority.MEDIUM) }
+    var priority by remember { mutableStateOf(TaskPriority.MEDIUM) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -482,7 +471,7 @@ fun TaskFilterSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Priority.values().forEach { priority ->
+                TaskPriority.values().forEach { priority ->
                     FilterChip(
                         selected = filter.priority == priority,
                         onClick = {
@@ -523,23 +512,23 @@ fun TaskFilterSheet(
 
 @Composable
 fun PrioritySelector(
-    selected: Priority,
-    onPrioritySelected: (Priority) -> Unit
+    selected: TaskPriority,
+    onPrioritySelected: (TaskPriority) -> Unit
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Priority.values().forEach { priority ->
+        TaskPriority.values().forEach { priority ->
             FilterChip(
                 selected = priority == selected,
                 onClick = { onPrioritySelected(priority) },
                 label = { Text(priority.name) },
                 leadingIcon = {
                     val icon = when (priority) {
-                        Priority.LOW -> Icons.Default.ArrowDownward
-                        Priority.MEDIUM -> Icons.Default.Remove
-                        Priority.HIGH -> Icons.Default.ArrowUpward
-                        Priority.URGENT -> Icons.Default.PriorityHigh
+                        TaskPriority.LOW -> Icons.Default.ArrowDownward
+                        TaskPriority.MEDIUM -> Icons.Default.Remove
+                        TaskPriority.HIGH -> Icons.Default.ArrowUpward
+                        TaskPriority.URGENT -> Icons.Default.PriorityHigh
                     }
                     Icon(icon, contentDescription = null)
                 }

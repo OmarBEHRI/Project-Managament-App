@@ -12,7 +12,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.projectmanager.data.model.Task
 import com.example.projectmanager.data.model.TaskStatus
-import com.example.projectmanager.data.model.Priority
+import com.example.projectmanager.data.model.TaskPriority
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -133,14 +133,14 @@ fun TaskStatusChip(
 
 @Composable
 fun PriorityChip(
-    priority: Priority,
+    priority: TaskPriority,
     modifier: Modifier = Modifier
 ) {
     val (backgroundColor, contentColor) = when (priority) {
-        Priority.LOW -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
-        Priority.MEDIUM -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
-        Priority.HIGH -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
-        Priority.URGENT -> MaterialTheme.colorScheme.error to MaterialTheme.colorScheme.onError
+        TaskPriority.LOW -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+        TaskPriority.MEDIUM -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
+        TaskPriority.HIGH -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
+        TaskPriority.URGENT -> MaterialTheme.colorScheme.error to MaterialTheme.colorScheme.onError
     }
 
     Surface(
@@ -156,10 +156,10 @@ fun PriorityChip(
         ) {
             Icon(
                 imageVector = when (priority) {
-                    Priority.LOW -> Icons.Default.ArrowDownward
-                    Priority.MEDIUM -> Icons.Default.Remove
-                    Priority.HIGH -> Icons.Default.ArrowUpward
-                    Priority.URGENT -> Icons.Default.PriorityHigh
+                    TaskPriority.LOW -> Icons.Default.ArrowDownward
+                    TaskPriority.MEDIUM -> Icons.Default.Remove
+                    TaskPriority.HIGH -> Icons.Default.ArrowUpward
+                    TaskPriority.URGENT -> Icons.Default.PriorityHigh
                 },
                 contentDescription = null,
                 modifier = Modifier.size(12.dp)

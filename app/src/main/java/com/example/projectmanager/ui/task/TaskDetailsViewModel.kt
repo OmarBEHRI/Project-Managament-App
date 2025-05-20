@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectmanager.data.model.*
+import com.example.projectmanager.data.model.TaskPriority
 import com.example.projectmanager.data.repository.ProjectRepository
 import com.example.projectmanager.data.repository.TaskRepository
 import com.example.projectmanager.data.service.StorageService
@@ -105,7 +106,7 @@ class TaskDetailsViewModel @Inject constructor(
         }
     }
 
-    fun updatePriority(priority: Priority) {
+    fun updatePriority(priority: TaskPriority) {
         uiState.value.task?.let { task ->
             updateTask(task.copy(priority = priority))
         }

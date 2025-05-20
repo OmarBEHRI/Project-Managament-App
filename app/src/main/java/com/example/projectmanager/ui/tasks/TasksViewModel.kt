@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projectmanager.data.model.Task
 import com.example.projectmanager.data.model.TaskStatus
-import com.example.projectmanager.data.model.Priority
+import com.example.projectmanager.data.model.TaskPriority
 import com.example.projectmanager.data.repository.TaskRepository
 import com.example.projectmanager.data.repository.UserRepository
 import com.example.projectmanager.util.Resource
@@ -22,7 +22,7 @@ data class TasksUiState(
 
 data class TaskFilter(
     val status: TaskStatus? = null,
-    val priority: Priority? = null
+    val priority: TaskPriority? = null
 )
 
 @HiltViewModel
@@ -50,8 +50,17 @@ class TasksViewModel @Inject constructor(
                     when (userResource) {
                         is Resource.Success -> {
                             userResource.data?.let { user ->
+                                println("Loading tasks for user: ${user.id}")
                                 taskRepository.getTasksByUser(user.id).collect { tasks ->
+                                    println("Received ${tasks.size} tasks for user ${user.id}")
+                                    
+                                    // Log each task for debugging
+                                    tasks.forEachIndexed { index, task ->
+                                        println("Task $index: id=${task.id}, title=${task.title}, assignedTo=${task.assignedTo}")
+                                    }
+                                    
                                     val filteredTasks = filterTasks(tasks, _uiState.value.filter)
+                                    println("After filtering: ${filteredTasks.size} tasks")
                                     
                                     _uiState.update { state ->
                                         state.copy(
@@ -64,6 +73,7 @@ class TasksViewModel @Inject constructor(
                             }
                         }
                         is Resource.Error -> {
+                            println("Error loading user: ${userResource.message}")
                             _uiState.update { state ->
                                 state.copy(
                                     isLoading = false,
@@ -79,6 +89,8 @@ class TasksViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
+                println("Exception loading tasks: ${e.message}")
+                e.printStackTrace()
                 _uiState.update { state ->
                     state.copy(
                         isLoading = false,
@@ -94,20 +106,41 @@ class TasksViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
 
             try {
+                println("Creating a new task: ${task.title}")
                 userRepository.getCurrentUser().collectLatest { userResource ->
                     when (userResource) {
                         is Resource.Success -> {
                             userResource.data?.let { user ->
+                                println("Current user: ${user.id}, ${user.displayName}")
+                                
+                                // Always ensure the task is assigned to the current user
+                                val assignees = if (task.assignedTo.isEmpty()) {
+                                    listOf(user.id)
+                                } else {
+                                    // Keep existing assignees and add current user if not already included
+                                    if (task.assignedTo.contains(user.id)) {
+                                        task.assignedTo
+                                    } else {
+                                        task.assignedTo + user.id
+                                    }
+                                }
+                                
+                                println("Task will be assigned to: $assignees")
+                                
                                 val newTask = task.copy(
                                     createdBy = user.id,
-                                    assignedTo = listOf(user.id)
+                                    assignedTo = assignees
                                 )
+                                
+                                println("Submitting task with assignedTo: ${newTask.assignedTo}")
                                 
                                 when (val result = taskRepository.createTask(newTask)) {
                                     is Resource.Success -> {
+                                        println("Task created successfully: ${result.data.id}")
                                         loadTasks() // Refresh the tasks list
                                     }
                                     is Resource.Error -> {
+                                        println("Error creating task: ${result.message}")
                                         _uiState.update { 
                                             it.copy(
                                                 isLoading = false,
@@ -120,6 +153,7 @@ class TasksViewModel @Inject constructor(
                             }
                         }
                         is Resource.Error -> {
+                            println("Error getting current user: ${userResource.message}")
                             _uiState.update { 
                                 it.copy(
                                     isLoading = false,
@@ -131,6 +165,8 @@ class TasksViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
+                println("Exception creating task: ${e.message}")
+                e.printStackTrace()
                 _uiState.update { 
                     it.copy(
                         isLoading = false,

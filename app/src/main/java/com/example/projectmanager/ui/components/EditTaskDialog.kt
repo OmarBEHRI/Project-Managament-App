@@ -10,7 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.projectmanager.data.model.Priority
+import com.example.projectmanager.data.model.TaskPriority
 import com.example.projectmanager.data.model.Task
 import com.example.projectmanager.data.model.TaskStatus
 import java.text.SimpleDateFormat
@@ -95,7 +95,7 @@ fun EditTaskDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Priority.values().forEach { priorityOption ->
+                    TaskPriority.values().forEach { priorityOption ->
                         FilterChip(
                             selected = priority == priorityOption,
                             onClick = { priority = priorityOption },

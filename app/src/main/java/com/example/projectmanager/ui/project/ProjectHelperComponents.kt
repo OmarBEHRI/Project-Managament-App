@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.projectmanager.data.model.*
+import com.example.projectmanager.data.model.TaskPriority
 import com.example.projectmanager.ui.components.ProjectDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
@@ -169,10 +170,10 @@ fun TaskListItem(
                 
                 // Priority indicator
                 val priorityColor = when(task.priority) {
-                    Priority.LOW -> Color(0xFF4CAF50)
-                    Priority.MEDIUM -> Color(0xFFFFC107)
-                    Priority.HIGH -> Color(0xFFFF9800)
-                    Priority.URGENT -> Color(0xFFF44336)
+                    TaskPriority.LOW -> Color(0xFF4CAF50)
+                    TaskPriority.MEDIUM -> Color(0xFFFFC107)
+                    TaskPriority.HIGH -> Color(0xFFFF9800)
+                    TaskPriority.URGENT -> Color(0xFFF44336)
                 }
                 
                 Box(

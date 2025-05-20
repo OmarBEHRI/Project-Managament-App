@@ -6,7 +6,7 @@ import androidx.room.TypeConverters
 import com.example.projectmanager.data.local.Converters
 import com.example.projectmanager.data.model.Task
 import com.example.projectmanager.data.model.TaskStatus
-import com.example.projectmanager.data.model.Priority
+import com.example.projectmanager.data.model.TaskPriority
 import com.example.projectmanager.data.model.Comment
 import com.example.projectmanager.data.model.TaskDependency
 
@@ -21,7 +21,7 @@ data class TaskEntity(
     val assignedTo: List<String> = emptyList(),
     val createdBy: String,
     val status: TaskStatus,
-    val priority: Priority,
+    val priority: TaskPriority,
     val dueDate: Long?,
     val createdAt: Long?,
     val updatedAt: Long?,

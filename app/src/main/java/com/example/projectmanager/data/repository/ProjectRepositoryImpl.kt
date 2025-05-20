@@ -276,17 +276,19 @@ class ProjectRepositoryImpl @Inject constructor(
     // Comments related methods
     override fun getProjectComments(projectId: String): Flow<List<Comment>> = flow {
         try {
+            // Simplified query that doesn't require a composite index
             val snapshot = commentsCollection
                 .whereEqualTo("projectId", projectId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
                 
             val comments = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Comment::class.java)
             }
+            // Sort in memory instead of in the query
+            val sortedComments = comments.sortedByDescending { it.createdAt }
             
-            emit(comments)
+            emit(sortedComments)
         } catch (e: Exception) {
             Timber.e(e, "Error getting project comments")
             emit(emptyList())
@@ -307,17 +309,19 @@ class ProjectRepositoryImpl @Inject constructor(
     // Attachments related methods
     override fun getProjectAttachments(projectId: String): Flow<List<FileAttachment>> = flow {
         try {
+            // Simplified query that doesn't require a composite index
             val snapshot = attachmentsCollection
                 .whereEqualTo("projectId", projectId)
-                .orderBy("uploadedAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
                 
             val attachments = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(FileAttachment::class.java)
             }
+            // Sort in memory instead of in the query
+            val sortedAttachments = attachments.sortedByDescending { it.uploadedAt }
             
-            emit(attachments)
+            emit(sortedAttachments)
         } catch (e: Exception) {
             Timber.e(e, "Error getting project attachments")
             emit(emptyList())

@@ -1,0 +1,926 @@
+package com.example.projectmanager.ui.project
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import com.example.projectmanager.data.model.*
+import java.text.SimpleDateFormat
+import java.util.*
+
+// Overview tab showing project summary
+@Composable
+fun ProjectOverviewTab(project: Project) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Project metrics
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Project Metrics",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Budget metrics
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        MetricItem(
+                            title = "Budget",
+                            value = "${project.budgetCurrency} ${project.budgetAmount}",
+                            icon = Icons.Outlined.AttachMoney
+                        )
+                        
+                        MetricItem(
+                            title = "Actual Cost",
+                            value = "${project.budgetCurrency} ${project.actualCost}",
+                            icon = Icons.Outlined.Receipt
+                        )
+                        
+                        MetricItem(
+                            title = "Variance",
+                            value = "${project.budgetCurrency} ${project.budgetAmount - project.actualCost}",
+                            icon = Icons.Outlined.TrendingUp,
+                            valueColor = if (project.budgetAmount >= project.actualCost) 
+                                Color(0xFF4CAF50) else Color(0xFFF44336)
+                        )
+                    }
+                    
+                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    
+                    // Time metrics
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        MetricItem(
+                            title = "Est. Hours",
+                            value = "${project.estimatedHours}h",
+                            icon = Icons.Outlined.Timer
+                        )
+                        
+                        MetricItem(
+                            title = "Actual Hours",
+                            value = "${project.actualHours}h",
+                            icon = Icons.Outlined.HourglassBottom
+                        )
+                        
+                        MetricItem(
+                            title = "Efficiency",
+                            value = if (project.estimatedHours > 0) 
+                                "${(project.estimatedHours.toFloat() / project.actualHours.toFloat() * 100).toInt()}%" 
+                            else "N/A",
+                            icon = Icons.Outlined.Speed,
+                            valueColor = if (project.estimatedHours >= project.actualHours) 
+                                Color(0xFF4CAF50) else Color(0xFFF44336)
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Project details
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Project Details",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    DetailRow(
+                        label = "Status",
+                        value = project.status.name,
+                        icon = Icons.Outlined.Info
+                    )
+                    
+                    DetailRow(
+                        label = "Priority",
+                        value = project.priority.name,
+                        icon = Icons.Outlined.PriorityHigh
+                    )
+                    
+                    DetailRow(
+                        label = "Start Date",
+                        value = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(project.startDate),
+                        icon = Icons.Outlined.CalendarToday
+                    )
+                    
+                    DetailRow(
+                        label = "Due Date",
+                        value = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(project.dueDate),
+                        icon = Icons.Outlined.Event
+                    )
+                    
+                    DetailRow(
+                        label = "Created By",
+                        value = project.createdBy,
+                        icon = Icons.Outlined.Person
+                    )
+                }
+            }
+        }
+        
+        // Project description
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Description",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = project.description.ifEmpty { "No description provided" },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetricItem(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall
+        )
+        
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = valueColor,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun DetailRow(
+    label: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+    }
+}
+
+// Tasks tab showing project tasks
+@Composable
+fun ProjectTasksTabComponent(
+    tasks: List<Task>,
+    onTaskClick: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        if (tasks.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Assignment,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No tasks yet",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Add tasks to track project progress",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            // Group tasks by status
+            val groupedTasks = tasks.groupBy { it.status }
+            val statuses = TaskStatus.values().toList()
+            
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                statuses.forEach { status ->
+                    val tasksForStatus = groupedTasks[status] ?: emptyList()
+                    if (tasksForStatus.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "${status.name} (${tasksForStatus.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+                        
+                        items(tasksForStatus) { task ->
+                            TaskItem(
+                                task = task,
+                                onClick = { onTaskClick(task.id) }
+                            )
+                        }
+                        
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskItem(
+    task: Task,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Priority indicator
+                Surface(
+                    shape = CircleShape,
+                    color = when (task.priority) {
+                        TaskPriority.HIGH -> Color(0xFFF44336)
+                        TaskPriority.MEDIUM -> Color(0xFFFF9800)
+                        TaskPriority.LOW -> Color(0xFF4CAF50)
+                    },
+                    modifier = Modifier.size(8.dp)
+                ) {}
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = task.description.ifEmpty { "No description" },
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Due date
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.CalendarToday,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = SimpleDateFormat("MMM dd", Locale.getDefault()).format(task.dueDate),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                // Assignee
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = task.assigneeName.ifEmpty { "Unassigned" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Members tab showing project team
+@Composable
+fun ProjectMembersTab(
+    project: Project,
+    members: List<User>,
+    userSuggestions: List<User>,
+    searchQuery: String,
+    isCurrentUserManager: Boolean,
+    onSearchQueryChange: (String) -> Unit,
+    onAddMember: (User, ProjectRole) -> Unit,
+    onRemoveMember: (String) -> Unit,
+    onClearSearch: () -> Unit
+) {
+    var showAddMemberDialog by remember { mutableStateOf(false) }
+    
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Add member button (only visible for managers)
+        if (isCurrentUserManager) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(
+                    onClick = { showAddMemberDialog = true },
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add Member")
+                }
+            }
+        }
+        
+        // Members list
+        if (members.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.People,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No team members",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Add team members to collaborate",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(members) { member ->
+                    MemberItem(
+                        user = member,
+                        projectRole = project.members.find { it.userId == member.id }?.role ?: ProjectRole.MEMBER,
+                        isCurrentUserManager = isCurrentUserManager,
+                        onRemove = { onRemoveMember(member.id) }
+                    )
+                }
+            }
+        }
+    }
+    
+    // Add member dialog
+    if (showAddMemberDialog) {
+        AddMemberDialog(
+            searchQuery = searchQuery,
+            userSuggestions = userSuggestions,
+            onSearchQueryChange = onSearchQueryChange,
+            onUserSelected = { /* This is intentionally empty as we'll use selectedUser in the dialog */ },
+            onAddMember = { user, role -> 
+                onAddMember(user, role)
+                showAddMemberDialog = false
+                onClearSearch()
+            },
+            onDismiss = { 
+                showAddMemberDialog = false 
+                onClearSearch()
+            }
+        )
+    }
+}
+
+@Composable
+fun MemberItem(
+    user: User,
+    projectRole: ProjectRole,
+    isCurrentUserManager: Boolean,
+    onRemove: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // User avatar
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = user.displayName.take(1).uppercase(),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            
+            // User info
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp)
+            ) {
+                Text(
+                    text = user.displayName,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = user.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // Role badge
+            AssistChip(
+                onClick = { },
+                label = { Text(projectRole.name) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = when(projectRole) {
+                        ProjectRole.OWNER -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        ProjectRole.ADMIN -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                        ProjectRole.MANAGER -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                )
+            )
+            
+            // Remove button (only for managers and not for owners)
+            if (isCurrentUserManager && projectRole != ProjectRole.OWNER) {
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Remove member",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Comments tab showing project discussions
+@Composable
+fun ProjectCommentsTab(
+    project: Project,
+    comments: List<Comment>,
+    onAddComment: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Comments list
+        if (comments.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Comment,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No comments yet",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Be the first to start the discussion",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(comments) { comment ->
+                    CommentItem(comment = comment)
+                }
+            }
+        }
+        
+        // Comment input
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                var commentText by remember { mutableStateOf("") }
+                
+                OutlinedTextField(
+                    value = commentText,
+                    onValueChange = { commentText = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Add a comment...") },
+                    maxLines = 3
+                )
+                
+                IconButton(
+                    onClick = { 
+                        if (commentText.isNotBlank()) {
+                            onAddComment(commentText)
+                            commentText = ""
+                        }
+                    },
+                    enabled = commentText.isNotBlank()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Send,
+                        contentDescription = "Send"
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CommentItem(comment: Comment) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Author and date row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Author
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Avatar
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = comment.authorName.take(1).uppercase(),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    Text(
+                        text = comment.authorName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                // Date
+                val dateFormat = SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault())
+                Text(
+                    text = dateFormat.format(comment.createdAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Comment content
+            Text(
+                text = comment.content,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddMemberDialog(
+    searchQuery: String,
+    userSuggestions: List<User>,
+    onSearchQueryChange: (String) -> Unit,
+    onUserSelected: (User) -> Unit,
+    onAddMember: (User, ProjectRole) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedUser by remember { mutableStateOf<User?>(null) }
+    var selectedRole by remember { mutableStateOf(ProjectRole.MEMBER) }
+    
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Add Team Member",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Search field
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Search by name or email") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                    },
+                    singleLine = true
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Search results
+                if (userSuggestions.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        items(userSuggestions) { user ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { 
+                                        selectedUser = user
+                                        onUserSelected(user)
+                                    }
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // User avatar
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = user.displayName.take(1).uppercase(),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                
+                                // User info
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 8.dp)
+                                ) {
+                                    Text(
+                                        text = user.displayName,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        text = user.email,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                
+                                // Selection indicator
+                                RadioButton(
+                                    selected = selectedUser?.id == user.id,
+                                    onClick = { 
+                                        selectedUser = user
+                                        onUserSelected(user)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Role selection (only shown when a user is selected)
+                if (selectedUser != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "Select Role",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ProjectRole.values().filter { it != ProjectRole.OWNER }.forEach { role ->
+                            FilterChip(
+                                selected = selectedRole == role,
+                                onClick = { selectedRole = role },
+                                label = { Text(role.name) }
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    Button(
+                        onClick = { 
+                            selectedUser?.let { user ->
+                                onAddMember(user, selectedRole)
+                            }
+                        },
+                        enabled = selectedUser != null
+                    ) {
+                        Text("Add")
+                    }
+                }
+            }
+        }
+    }
+}
