@@ -112,32 +112,86 @@ class TaskRepositoryImpl @Inject constructor(
                 .get()
                 .await()
             
-            val tasks = snapshot.toObjects(Task::class.java)
+            // Convert to Task objects manually to avoid DocumentId issues
+            val tasks = snapshot.documents.mapNotNull { doc ->
+                try {
+                    // Manually map Firestore document to Task object
+                    Task(
+                        id = doc.id,
+                        title = doc.getString("title") ?: "",
+                        description = doc.getString("description") ?: "",
+                        projectId = doc.getString("project_id") ?: "",
+                        assignedTo = (doc.get("assigned_to") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        createdBy = doc.getString("created_by") ?: "",
+                        status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.TODO,
+                        priority = doc.getString("priority")?.let { TaskPriority.valueOf(it) } ?: TaskPriority.MEDIUM,
+                        dueDate = doc.getDate("due_date"),
+                        isCompleted = doc.getBoolean("completed") ?: false,
+                        estimatedHours = doc.getDouble("estimated_hours")?.toFloat()
+                    )
+                } catch (e: Exception) {
+                    println("Error mapping document ${doc.id}: ${e.message}")
+                    null
+                }
+            }
+            
             println("Found ${tasks.size} tasks for user $userId")
+            tasks.forEach { task ->
+                println("Task: ${task.id}, ${task.title}, assigned to: ${task.assignedTo}")
+            }
             
             // Sort in memory instead of in the query
             val sortedTasks = tasks.sortedBy { it.dueDate }
             emit(sortedTasks)
         } catch (e: Exception) {
             println("Error fetching tasks for user $userId: ${e.message}")
+            e.printStackTrace()
             emit(emptyList())
         }
     }
 
     override fun getPendingTasks(): Flow<List<Task>> = flow {
         try {
-            println("Fetching pending tasks")
+            println("Fetching all pending tasks")
+            
             val snapshot = tasksCollection
-                .whereEqualTo("completed", false) // Using the correct field name in Firestore
+                .whereEqualTo("completed", false)
                 .get()
                 .await()
-            val tasks = snapshot.toObjects(Task::class.java)
-            println("Found ${tasks.size} pending tasks")
-            // Sort in memory instead of in the query to avoid composite index requirements
+            
+            // Convert to Task objects manually to avoid DocumentId issues
+            val tasks = snapshot.documents.mapNotNull { doc ->
+                try {
+                    // Manually map Firestore document to Task object
+                    Task(
+                        id = doc.id,
+                        title = doc.getString("title") ?: "",
+                        description = doc.getString("description") ?: "",
+                        projectId = doc.getString("project_id") ?: "",
+                        assignedTo = (doc.get("assigned_to") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        createdBy = doc.getString("created_by") ?: "",
+                        status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.TODO,
+                        priority = doc.getString("priority")?.let { TaskPriority.valueOf(it) } ?: TaskPriority.MEDIUM,
+                        dueDate = doc.getDate("due_date"),
+                        isCompleted = doc.getBoolean("completed") ?: false,
+                        estimatedHours = doc.getDouble("estimated_hours")?.toFloat()
+                    )
+                } catch (e: Exception) {
+                    println("Error mapping document ${doc.id}: ${e.message}")
+                    null
+                }
+            }
+            
+            println("Received ${tasks.size} pending tasks")
+            tasks.forEach { task ->
+                println("Pending task: ${task.id}, ${task.title}, assigned to: ${task.assignedTo}")
+            }
+            
             val sortedTasks = tasks.sortedBy { it.dueDate }
             emit(sortedTasks)
         } catch (e: Exception) {
             println("Error fetching pending tasks: ${e.message}")
+            e.printStackTrace()
             emit(emptyList())
         }
     }

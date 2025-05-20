@@ -32,6 +32,7 @@ data class Task(
     @ServerTimestamp
     val updatedAt: Date? = null,
     val tags: List<String> = emptyList(),
+    @get:PropertyName("completed")
     val isCompleted: Boolean = false,
     @get:PropertyName("completed_at")
     val completedAt: Date? = null,
