@@ -83,8 +83,6 @@ The application uses the following primary data models:
 - Interactive charts and graphs for data visualization
 
 ## Project Structure
-project-management-android-app/ ├── app/ # Main application module │ ├── src/ │ │ ├── main/ │ │ │ ├── java/com/example/projectmanager/ │ │ │ │ ├── data/ # Data layer │ │ │ │ │ ├── model/ # Data models │ │ │ │ │ ├── remote/ # Remote data sources (Firebase) │ │ │ │ │ ├── local/ # Local data sources (Room) │ │ │ │ │ └── repository/ # Repositories │ │ │ │ ├── di/ # Dependency injection │ │ │ │ ├── domain/ # Domain layer (use cases) │ │ │ │ ├── ui/ # Presentation layer │ │ │ │ │ ├── auth/ # Authentication screens │ │ │ │ │ ├── projects/ # Project management screens │ │ │ │ │ ├── tasks/ # Task management screens │ │ │ │ │ ├── chat/ # Communication screens │ │ │ │ │ └── components/ # Reusable UI components │ │ │ │ ├── util/ # Utility classes │ │ │ │ └── MainActivity.kt │ │ │ ├── res/ # Resources │ │ │ └── AndroidManifest.xml │ │ └── test/ # Unit and instrumentation tests ├── conception/ # Design documents │ ├── class_diagrams/ # UML class diagrams │ ├── diagrams_use_case/ # Use case diagrams │ └── sequence_diagrams/ # Sequence diagrams ├── gradle/ # Gradle configuration ├── build.gradle # Project build configuration └── README.md # This file
-
 
 ## Technical Details
 
