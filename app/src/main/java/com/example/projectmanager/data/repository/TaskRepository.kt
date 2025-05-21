@@ -22,6 +22,7 @@ interface TaskRepository {
     fun getTasksByUser(userId: String): Flow<List<Task>>
     fun getPendingTasks(): Flow<List<Task>>
     fun getOverdueTasks(): Flow<List<Task>>
+    fun getCompletedTasks(limit: Int = 50): Flow<List<Task>>
     suspend fun createTask(task: Task): Resource<Task>
     suspend fun updateTask(task: Task): Resource<Task>
     suspend fun deleteTask(taskId: String): Resource<Unit>
