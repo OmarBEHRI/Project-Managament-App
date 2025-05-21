@@ -16,7 +16,8 @@ data class User(
     val bio: String = "",
     val position: String = "",
     val department: String = "",
-    val skills: List<String> = emptyList(),
+    val skills: List<String> = emptyList(), // Skill names for backward compatibility
+    val skillIds: List<String> = emptyList(), // References to Skill documents
     val projectIds: List<String> = emptyList(),
     @get:PropertyName("last_active")
     @set:PropertyName("last_active")

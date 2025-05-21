@@ -261,7 +261,8 @@ fun TaskList(
                     if (dismissState.dismissDirection != null) {
                         Surface(
                             modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.errorContainer
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
                         ) {
                             Box(
                                 modifier = Modifier
@@ -299,7 +300,7 @@ fun TaskList(
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = if (task.isCompleted) 
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                                MaterialTheme.colorScheme.surfaceVariant
                             else 
                                 MaterialTheme.colorScheme.surface
                         ),

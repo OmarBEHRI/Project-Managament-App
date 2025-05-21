@@ -172,35 +172,30 @@ class ProjectViewModel @Inject constructor(
             }
         }
     }
-    
+
     private fun loadProjectComments(projectId: String) {
-        viewModelScope.launch {
-            try {
-                projectRepository.getProjectComments(projectId).collect { comments ->
-                    _uiState.update {
-                        it.copy(comments = comments)
-                    }
-                }
-            } catch (e: Exception) {
-                // Just log the error, don't update UI state as this is a secondary feature
-                e.printStackTrace()
-            }
-        }
+        // TODO: Implement loading project comments
     }
-    
+
     private fun loadProjectAttachments(projectId: String) {
-        viewModelScope.launch {
-            try {
-                projectRepository.getProjectAttachments(projectId).collect { attachments ->
-                    _uiState.update {
-                        it.copy(attachments = attachments)
-                    }
-                }
-            } catch (e: Exception) {
-                // Just log the error, don't update UI state as this is a secondary feature
-                e.printStackTrace()
-            }
+        // TODO: Implement loading project attachments
+    }
+
+    private fun calculateTaskStats(tasks: List<Task>): TaskStats {
+        val activeTasks = tasks.filter { it.status != TaskStatus.CANCELED }
+        val completedTasks = activeTasks.filter { it.isCompleted }
+        val completedPercentage = if (activeTasks.isNotEmpty()) {
+            completedTasks.size.toFloat() / activeTasks.size
+        } else {
+            0f
         }
+        
+        return TaskStats(
+            total = tasks.size,
+            completed = completedTasks.size,
+            active = activeTasks.size,
+            completedPercentage = completedPercentage
+        )
     }
 
     fun updateProject(project: Project) {
@@ -211,6 +206,7 @@ class ProjectViewModel @Inject constructor(
                 val result = projectRepository.updateProject(project)
                 when (result) {
                     is Resource.Success -> {
+                        // Refresh project data
                         loadProject(project.id)
                     }
                     is Resource.Error -> {
@@ -270,171 +266,34 @@ class ProjectViewModel @Inject constructor(
         }
     }
     
-    // Search for users to add to the project
     fun searchUsers(query: String) {
         viewModelScope.launch {
             if (query.length < 2) {
-                _uiState.update { it.copy(userSuggestions = emptyList(), searchQuery = query) }
+                _uiState.update { it.copy(userSuggestions = emptyList()) }
                 return@launch
             }
-            
-            _uiState.update { it.copy(searchQuery = query) }
             
             try {
                 userRepository.searchUsers(query).collect { resource ->
                     when (resource) {
-                        is Resource.Success<List<User>> -> {
-                            val users = resource.data ?: emptyList()
-                            // Filter out users who are already members
-                            val currentMemberIds = _uiState.value.project?.members?.map { it.userId } ?: emptyList()
-                            val filteredUsers = users.filter { user -> !currentMemberIds.contains(user.id) }
-                            
-                            _uiState.update { it.copy(userSuggestions = filteredUsers) }
+                        is Resource.Success -> {
+                            _uiState.update { it.copy(userSuggestions = resource.data) }
                         }
-                        else -> {
-                            _uiState.update { it.copy(userSuggestions = emptyList()) }
+                        is Resource.Error -> {
+                            _uiState.update { it.copy(error = resource.message) }
                         }
+                        else -> {}
                     }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(userSuggestions = emptyList()) }
+                _uiState.update { it.copy(error = e.message) }
             }
         }
     }
     
-    // Add a member to the project
-    fun addMemberToProject(user: User, role: ProjectRole = ProjectRole.MEMBER) {
-        viewModelScope.launch {
-            val project = _uiState.value.project ?: return@launch
-            
-            // Create a new ProjectMember
-            val newMember = ProjectMember(
-                userId = user.id,
-                role = role,
-                joinedAt = Date()
-            )
-            
-            // Check if user is already a member
-            if (project.members.any { it.userId == user.id }) {
-                _uiState.update { it.copy(error = "User is already a member of this project") }
-                return@launch
-            }
-            
-            // Add the member to the project
-            val updatedProject = project.copy(
-                members = project.members + newMember
-            )
-            
-            updateProject(updatedProject)
-            
-            // Clear suggestions after adding
-            _uiState.update { it.copy(userSuggestions = emptyList(), searchQuery = "") }
-        }
-    }
-    
-    // Remove a member from the project
-    fun removeMemberFromProject(userId: String) {
-        viewModelScope.launch {
-            val project = _uiState.value.project ?: return@launch
-            
-            // Check if current user has permission to remove members
-            if (!isCurrentUserManager()) {
-                _uiState.update { it.copy(error = "You don't have permission to remove members") }
-                return@launch
-            }
-            
-            // Check if trying to remove the owner
-            val memberToRemove = project.members.find { it.userId == userId }
-            if (memberToRemove?.role == ProjectRole.OWNER) {
-                _uiState.update { it.copy(error = "Cannot remove the project owner") }
-                return@launch
-            }
-            
-            // Remove the member
-            val updatedProject = project.copy(
-                members = project.members.filter { it.userId != userId }
-            )
-            
-            updateProject(updatedProject)
-        }
-    }
-    
-    // Add a comment to the project
-    fun addComment(content: String) {
-        viewModelScope.launch {
-            val project = _uiState.value.project ?: return@launch
-            val userId = currentUserId ?: return@launch
-            val userName = currentUserName ?: "Unknown User"
-            
-            val comment = Comment(
-                id = UUID.randomUUID().toString(),
-                projectId = project.id,
-                userId = userId,
-                authorName = userName,
-                content = content,
-                createdAt = Date()
-            )
-            
-            try {
-                val result = projectRepository.addComment(comment)
-                when (result) {
-                    is Resource.Success<Comment> -> {
-                        // Refresh comments
-                        loadProjectComments(project.id)
-                    }
-                    is Resource.Error -> {
-                        _uiState.update { it.copy(error = result.message) }
-                    }
-                    else -> {}
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Failed to add comment") }
-            }
-        }
-    }
-    
-    // Upload a file attachment to the project
-    fun uploadAttachment(fileName: String, fileSize: Long, mimeType: String, fileUri: String) {
-        viewModelScope.launch {
-            val project = _uiState.value.project ?: return@launch
-            val userId = currentUserId ?: return@launch
-            
-            try {
-                val result = projectRepository.uploadAttachment(
-                    projectId = project.id,
-                    fileName = fileName,
-                    fileSize = fileSize,
-                    mimeType = mimeType,
-                    fileUri = fileUri,
-                    uploadedBy = userId
-                )
-                
-                when (result) {
-                    is Resource.Success<FileAttachment> -> {
-                        // Refresh attachments
-                        loadProjectAttachments(project.id)
-                    }
-                    is Resource.Error -> {
-                        _uiState.update { it.copy(error = result.message) }
-                    }
-                    else -> {}
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Failed to upload attachment") }
-            }
-        }
-    }
-    
-    // Check if current user is a manager of the project
     fun isCurrentUserManager(): Boolean {
         val project = _uiState.value.project ?: return false
-        val userId = currentUserId ?: return false
-        
-        return project.ownerId == userId || 
-               project.members.any { 
-                   it.userId == userId && 
-                   (it.role == ProjectRole.MANAGER || it.role == ProjectRole.OWNER || it.role == ProjectRole.ADMIN)
-               }
+        return project.managerId == currentUserId
     }
     
     /**
@@ -625,7 +484,7 @@ class ProjectViewModel @Inject constructor(
                 // Update each task with the assigned user
                 for ((taskId, userId) in assignments) {
                     val task = tasks.find { it.id == taskId } ?: continue
-                    val updatedTask = task.copy(assignedTo = listOf(userId))
+                    val updatedTask = task.copy(assignedTo = userId)
                     taskRepository.updateTask(updatedTask)
                 }
                 
@@ -648,39 +507,5 @@ class ProjectViewModel @Inject constructor(
                 }
             }
         }
-    }
-    
-    // Clear search query and suggestions
-    fun clearSearch() {
-        _uiState.update { it.copy(userSuggestions = emptyList(), searchQuery = "") }
-    }
-    
-    /**
-     * Calculate task statistics excluding canceled tasks
-     */
-    private fun calculateTaskStats(tasks: List<Task>): TaskStats {
-        // Filter out canceled tasks
-        val activeTasks = tasks.filter { it.status != TaskStatus.CANCELLED }
-        
-        // Count tasks as completed if either isCompleted flag is true OR status is COMPLETED
-        val completedTasks = activeTasks.filter { it.isCompleted || it.status == TaskStatus.COMPLETED }
-        
-        val total = tasks.size
-        val active = activeTasks.size
-        val completed = completedTasks.size
-        
-        // Calculate completion percentage based on active tasks (excluding canceled)
-        val completedPercentage = if (active > 0) {
-            (completed.toFloat() / active.toFloat()) * 100f
-        } else {
-            0f
-        }
-        
-        return TaskStats(
-            total = total,
-            active = active,
-            completed = completed,
-            completedPercentage = completedPercentage
-        )
     }
 }

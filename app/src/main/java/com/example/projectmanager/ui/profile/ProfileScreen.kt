@@ -1,8 +1,12 @@
 package com.example.projectmanager.ui.profile
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,11 +18,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.projectmanager.data.model.Skill
 import com.example.projectmanager.data.model.User
+import com.example.projectmanager.ui.profile.SkillsSection
+import com.example.projectmanager.ui.profile.AddSkillDialog
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,6 +38,7 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showEditDialog by remember { mutableStateOf(false) }
+    var showAddSkillDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -56,7 +65,10 @@ fun ProfileScreen(
                 uiState.user?.let { user ->
                     ProfileContent(
                         user = user,
+                        skills = uiState.skills,
                         onEditClick = { showEditDialog = true },
+                        onAddSkill = { showAddSkillDialog = true },
+                        onRemoveSkill = { skill -> viewModel.removeSkill(skill) },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -86,13 +98,33 @@ fun ProfileScreen(
                 )
             }
         }
+        
+        if (showAddSkillDialog) {
+            AddSkillDialog(
+                availableSkills = uiState.availableSkills,
+                isSearching = uiState.isSearchingSkills,
+                onSearch = { query -> viewModel.searchSkills(query) },
+                onAddSkill = { skillName -> 
+                    viewModel.addSkill(skillName)
+                    showAddSkillDialog = false
+                },
+                onAddExistingSkill = { skill ->
+                    viewModel.addExistingSkill(skill)
+                    showAddSkillDialog = false
+                },
+                onDismiss = { showAddSkillDialog = false }
+            )
+        }
     }
 }
 
 @Composable
 fun ProfileContent(
     user: User,
+    skills: List<Skill>,
     onEditClick: () -> Unit,
+    onAddSkill: () -> Unit,
+    onRemoveSkill: (Skill) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -175,6 +207,16 @@ fun ProfileContent(
                 icon = Icons.Default.Folder,
                 label = "Active Projects",
                 value = "${user.activeProjects}"
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ProfileSection(title = "Skills") {
+            SkillsSection(
+                skills = skills,
+                onAddSkill = onAddSkill,
+                onRemoveSkill = onRemoveSkill
             )
         }
     }
