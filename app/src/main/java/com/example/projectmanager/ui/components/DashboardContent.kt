@@ -64,11 +64,13 @@ fun DashboardContent(
         override fun navigateToChatSettings(chatId: String) {}
     }
 
-    // Use our enhanced DashboardScreen
-    com.example.projectmanager.ui.dashboard.DashboardScreen(
-        viewModel = dashboardViewModel,
-        appNavigator = appNavigator
-    )
+    // Use our enhanced DashboardScreen with proper padding
+    Box(modifier = modifier) {
+        com.example.projectmanager.ui.dashboard.DashboardScreen(
+            viewModel = dashboardViewModel,
+            appNavigator = appNavigator
+        )
+    }
 }
 
 @Composable

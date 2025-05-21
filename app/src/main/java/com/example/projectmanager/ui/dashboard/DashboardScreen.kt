@@ -1,10 +1,12 @@
 package com.example.projectmanager.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -22,6 +24,7 @@ import com.example.projectmanager.navigation.AppNavigator
 import com.example.projectmanager.ui.theme.GradientStart
 import com.example.projectmanager.ui.theme.GradientEnd
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
@@ -37,11 +40,32 @@ fun DashboardScreen(
         uiState.recentProjects
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Dashboard") },
+                actions = {
+                    // Analytics Dashboard button
+                    IconButton(onClick = { appNavigator?.navigateToAnalyticsDashboard() }) {
+                        Icon(Icons.Default.BarChart, contentDescription = "Analytics Dashboard")
+                    }
+                    // Profile button
+                    IconButton(onClick = { appNavigator?.navigateToProfile() }) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+                    }
+                    // Settings button
+                    IconButton(onClick = { appNavigator?.navigateToSettings() }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
@@ -56,13 +80,9 @@ fun DashboardScreen(
                 )
             }
             
-            // Analytics Dashboard Button
+            // No longer need the Analytics Dashboard Button here since it's in the TopAppBar
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                AnalyticsDashboardButton(onClick = {
-                    appNavigator?.navigateToAnalyticsDashboard()
-                })
-                Spacer(modifier = Modifier.height(16.dp))
             }
             
             item {
@@ -143,18 +163,28 @@ fun DashboardScreen(
 
 @Composable
 fun WelcomeSection(userName: String) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        shape = RoundedCornerShape(8.dp)
     ) {
-        Text(
-            text = "Welcome back,",
-            style = MaterialTheme.typography.titleMedium
-        )
-        Text(
-            text = userName,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Welcome back,",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = userName,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
     }
 }
 
