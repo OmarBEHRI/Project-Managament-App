@@ -64,6 +64,15 @@ fun HomeScreen(
                     icon = { Icon(Icons.Default.Assignment, contentDescription = "Tasks") },
                     label = { Text("Tasks") }
                 )
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = {
+                        selectedTab = 3
+                        appNavigator.navigateToChats()
+                    },
+                    icon = { Icon(Icons.Default.Chat, contentDescription = "Chat") },
+                    label = { Text("Chat") }
+                )
             }
         },
         floatingActionButton = {

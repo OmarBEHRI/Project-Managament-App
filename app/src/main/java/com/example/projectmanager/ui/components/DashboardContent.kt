@@ -57,6 +57,12 @@ fun DashboardContent(
                 onNavigateToAnalytics()
             }
             override fun isUserSignedIn(): Boolean = true
+            
+            // Chat navigation functions
+            override fun navigateToChats() {}
+            override fun navigateToChat(chatId: String) {}
+            override fun navigateToNewChat(projectId: String?) {}
+            override fun navigateToChatSettings(chatId: String) {}
         }
     }
 
