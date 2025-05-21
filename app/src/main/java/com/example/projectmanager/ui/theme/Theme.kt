@@ -19,8 +19,8 @@ val ProjexLightBlue = Color(0xFF3498DB)
 val ProjexDarkTeal = Color(0xFF006C84)
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF2196F3),          // Blue
-    onPrimary = Color.White,
+    primary = Color.White,              // Changed from Blue to White
+    onPrimary = Color(0xFF2196F3),      // Reversed for contrast
     primaryContainer = Color(0xFFBBDEFB),
     onPrimaryContainer = Color(0xFF1976D2),
     secondary = Color(0xFF673AB7),        // Deep Purple
@@ -87,8 +87,8 @@ fun ProjectmanagerTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            window.statusBarColor = colorScheme.background.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
         }
     }
 

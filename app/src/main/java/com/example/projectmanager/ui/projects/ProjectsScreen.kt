@@ -72,7 +72,14 @@ fun ProjectsScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("Projects") },
+                    title = { 
+                        Text(
+                            "Projects", 
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) 
+                    },
                     navigationIcon = {
                         if (appNavigator != null && appNavigator !is MainScreenNavigator) {
                             IconButton(onClick = { appNavigator.navigateBack() }) {
@@ -454,33 +461,8 @@ fun ModernProjectCard(
             
             // Progress bar
             Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Progress",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "${project.completedTasks}/${project.totalTasks} tasks",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                
+                // Empty space where the task count used to be
                 Spacer(modifier = Modifier.height(4.dp))
-                
-                LinearProgressIndicator(
-                    progress = progressPercentage / 100f,
-                    modifier = Modifier.fillMaxWidth(),
-                    color = when {
-                        progressPercentage >= 100f -> MaterialTheme.colorScheme.secondary
-                        progressPercentage >= 75f -> MaterialTheme.colorScheme.primary
-                        progressPercentage >= 25f -> MaterialTheme.colorScheme.tertiary
-                        else -> MaterialTheme.colorScheme.error
-                    },
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
             }
             
             Spacer(modifier = Modifier.height(16.dp))

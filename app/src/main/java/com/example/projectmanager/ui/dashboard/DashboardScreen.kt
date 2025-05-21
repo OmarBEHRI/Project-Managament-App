@@ -44,25 +44,35 @@ fun DashboardScreen(
         uiState.recentProjects
     }
 
-    Surface(
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        "Dashboard", 
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) 
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                )
+            )
+        },
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 24.dp, bottom = 24.dp)
+            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
         ) {
             item {
-                Text(
-                    text = "Dashboard",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(8.dp))
                 WelcomeSection(userName = uiState.userName)
             }
             
@@ -212,7 +222,7 @@ fun StatCard(
     iconTint: Color = MaterialTheme.colorScheme.primary
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.height(160.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
@@ -222,8 +232,10 @@ fun StatCard(
         Column(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
@@ -305,27 +317,8 @@ fun ProjectCard(
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LinearProgressIndicator(
-                        progress = if (project.totalTasks > 0) {
-                            project.completedTasks.toFloat() / project.totalTasks.toFloat()
-                        } else 0f,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    )
-                    
-                    Spacer(modifier = Modifier.width(12.dp))
-                    
-                    Text(
-                        text = "${project.completedTasks}/${project.totalTasks}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                // Empty space where the task count used to be
+                Spacer(modifier = Modifier.height(4.dp))
             }
             
             Spacer(modifier = Modifier.width(8.dp))

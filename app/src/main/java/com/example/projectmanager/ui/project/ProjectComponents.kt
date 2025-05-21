@@ -67,8 +67,8 @@ fun ProjectDetailsTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = Color.White,
+            titleContentColor = MaterialTheme.colorScheme.primary
         )
     )
 }
