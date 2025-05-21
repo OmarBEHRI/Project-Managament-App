@@ -20,7 +20,9 @@ data class ChatUiState(
     val messages: List<Message> = emptyList(),
     val messageText: String = "",
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val recipientName: String? = null,
+    val projectName: String? = null
 )
 
 @HiltViewModel
@@ -367,6 +369,32 @@ class ChatViewModel @Inject constructor(
     }
 
     fun getCurrentUserId(): String {
-        return userRepository.getCurrentUserId()
+        return userRepository.getCurrentUserId() ?: ""
+    }
+    
+    // Load user information for a participant
+    fun loadUserInfo(userId: String) {
+        viewModelScope.launch {
+            userRepository.getUserById(userId).collect { result ->
+                when (result) {
+                    is Resource.Success<*> -> {
+                        val user = result.data as User
+                        _uiState.update { it.copy(recipientName = user.displayName) }
+                    }
+                    is Resource.Error -> {
+                        // Handle error silently
+                        println("Error loading user info: ${result.message}")
+                    }
+                    is Resource.Loading -> {
+                        // Loading state
+                    }
+                }
+            }
+        }
+    }
+    
+    // Get the recipient name for display in the UI
+    fun getRecipientName(): String? {
+        return uiState.value.recipientName ?: uiState.value.chat?.name
     }
 }

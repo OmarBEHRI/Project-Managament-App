@@ -211,15 +211,27 @@ class FirebaseChatRepository @Inject constructor(
                 senderName = message.senderName,
                 content = message.content,
                 type = message.type,
-                status = MessageStatus.SENT,
                 sentAt = message.sentAt ?: Date(),
+                status = MessageStatus.SENT,
                 readBy = message.readBy ?: listOf(finalSenderId)
             )
 
+            // Créer un MessageSummary pour le dernier message du chat
+            val messageSummary = com.example.projectmanager.data.model.MessageSummary(
+                id = messageRef.id,
+                chatId = message.chatId,
+                senderId = finalSenderId,
+                senderName = message.senderName,
+                content = message.content,
+                type = message.type,
+                sentAt = message.sentAt ?: Date(),
+                status = MessageStatus.SENT
+            )
+            
             // Mettre à jour le dernier message du chat
             chatsCollection.document(messageToStore.chatId).update(
                 mapOf(
-                    "last_message" to messageData,  // Utiliser la map explicite pour cohérence
+                    "last_message" to messageSummary,
                     "updated_at" to Date()
                 )
             ).await()
@@ -271,7 +283,7 @@ class FirebaseChatRepository @Inject constructor(
             messagesCollection.document(messageId).delete().await()
 
             // Update chat's last message if needed
-            val lastMessage = messagesCollection
+            val lastMessageDoc = messagesCollection
                 .whereEqualTo("chat_id", chatId)
                 .orderBy("sent_at", Query.Direction.DESCENDING)
                 .limit(1)
@@ -279,11 +291,35 @@ class FirebaseChatRepository @Inject constructor(
                 .await()
                 .documents
                 .firstOrNull()
-                ?.toObject<Message>()
+                
+            // Create a MessageSummary from the last message document
+            val lastMessageSummary = if (lastMessageDoc != null) {
+                val id = lastMessageDoc.id
+                val senderId = lastMessageDoc.getString("sender_id") ?: ""
+                val chatId = lastMessageDoc.getString("chat_id") ?: ""
+                val content = lastMessageDoc.getString("content") ?: ""
+                val senderName = lastMessageDoc.getString("sender_name")
+                val typeStr = lastMessageDoc.getString("type") ?: "TEXT"
+                val type = try { MessageType.valueOf(typeStr) } catch (e: Exception) { MessageType.TEXT }
+                val sentAt = lastMessageDoc.getTimestamp("sent_at")?.toDate() ?: Date()
+                val statusStr = lastMessageDoc.getString("status") ?: "SENT"
+                val status = try { MessageStatus.valueOf(statusStr) } catch (e: Exception) { MessageStatus.SENT }
+                
+                com.example.projectmanager.data.model.MessageSummary(
+                    id = id,
+                    chatId = chatId,
+                    senderId = senderId,
+                    senderName = senderName,
+                    content = content,
+                    type = type,
+                    sentAt = sentAt,
+                    status = status
+                )
+            } else null
 
             chatsCollection.document(chatId).update(
                 mapOf(
-                    "last_message" to lastMessage,
+                    "last_message" to lastMessageSummary,
                     "updated_at" to Date()
                 )
             ).await()

@@ -20,6 +20,8 @@ import com.example.projectmanager.data.model.Chat
 import com.example.projectmanager.data.model.ChatType
 import com.example.projectmanager.ui.components.EmptyStateView
 import com.example.projectmanager.ui.components.LoadingView
+import com.example.projectmanager.ui.components.BottomNavBar
+import com.example.projectmanager.navigation.MainScreenNavigator
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,7 +31,8 @@ fun ChatListScreen(
     projectId: String? = null,
     viewModel: ChatListViewModel = hiltViewModel(),
     onNavigateToChat: (String) -> Unit = {},
-    onNavigateToNewChat: () -> Unit = {}
+    onNavigateToNewChat: () -> Unit = {},
+    appNavigator: MainScreenNavigator = com.example.projectmanager.navigation.AppNavigatorImpl(com.google.firebase.auth.FirebaseAuth.getInstance())
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -38,6 +41,15 @@ fun ChatListScreen(
     }
 
     Scaffold(
+        bottomBar = {
+            // Only show bottom navigation if we have a valid AppNavigator
+            if (appNavigator != null && appNavigator is com.example.projectmanager.navigation.MainScreenNavigator) {
+                com.example.projectmanager.ui.components.BottomNavBar(
+                    currentRoute = "chats",
+                    appNavigator = appNavigator
+                )
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text(if (projectId != null) "Project Chat" else "Chats") },

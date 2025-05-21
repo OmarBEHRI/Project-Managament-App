@@ -60,17 +60,78 @@ fun ChatScreen(
         }
     }
 
+    val appNavigator = remember {
+        object : com.example.projectmanager.navigation.AppNavigator {
+            override fun navigateBack() { onNavigateBack() }
+            override fun navigateToSignIn() {}
+            override fun navigateToSignUp() {}
+            override fun navigateToForgotPassword() {}
+            override fun navigateToHome() { onNavigateBack() }
+            override fun navigateToProjects() { onNavigateBack() }
+            override fun navigateToProject(projectId: String) {}
+            override fun navigateToTasks() { onNavigateBack() }
+            override fun navigateToTask(taskId: String) {}
+            override fun navigateToProfile() {}
+            override fun navigateToSettings() {}
+            override fun navigateToCreateProject() {}
+            override fun navigateToCreateTask(projectId: String?) {}
+            override fun navigateToEditProject(projectId: String) {}
+            override fun navigateToEditTask(taskId: String) {}
+            override fun navigateToAnalyticsDashboard() {}
+            override fun isUserSignedIn(): Boolean = true
+            override fun navigateToChats() {}
+            override fun navigateToChat(chatId: String) {}
+            override fun navigateToNewChat(projectId: String?) {}
+            override fun navigateToChatSettings(chatId: String) {}
+        }
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text(uiState.chat?.name ?: "Chat")
-                        if (uiState.chat?.type == ChatType.GROUP) {
-                            Text(
-                                text = "${uiState.chat?.participants?.size ?: 0} participants",
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                        // Display the chat name with a more descriptive fallback
+                        Text(
+                            text = when {
+                                !uiState.chat?.name.isNullOrBlank() -> uiState.chat?.name ?: "Chat"
+                                uiState.chat?.type == ChatType.DIRECT -> "Conversation"
+                                uiState.chat?.type == ChatType.GROUP -> "Group Chat"
+                                uiState.chat?.type == ChatType.PROJECT -> "Project Chat"
+                                else -> "Chat"
+                            },
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        
+                        // Show additional information based on chat type
+                        when (uiState.chat?.type) {
+                            ChatType.DIRECT -> {
+                                // For direct chats, show the other participant's name
+                                val otherParticipantId = uiState.chat?.participants?.find { it != viewModel.getCurrentUserId() }
+                                if (otherParticipantId != null) {
+                                    LaunchedEffect(otherParticipantId) {
+                                        viewModel.loadUserInfo(otherParticipantId)
+                                    }
+                                }
+                                
+                                Text(
+                                    text = viewModel.getRecipientName() ?: "Loading...",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            ChatType.GROUP -> {
+                                Text(
+                                    text = "${uiState.chat?.participants?.size ?: 0} participants",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            ChatType.PROJECT -> {
+                                Text(
+                                    text = "Project: ${uiState.projectName ?: ""}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            else -> { /* No subtitle for other chat types */ }
                         }
                     }
                 },
@@ -80,8 +141,17 @@ fun ChatScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Show chat info */ }) {
-                        Icon(Icons.Default.Info, contentDescription = "Chat Info")
+                    // Add a settings button to view chat details
+                    val context = LocalContext.current
+                    IconButton(onClick = { 
+                        // Navigate to chat settings
+                        uiState.chat?.id?.let { chatId ->
+                            // This would be handled by the navigation callback
+                            // For now we'll just show a toast
+                            android.widget.Toast.makeText(context, "Chat settings", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Chat Settings")
                     }
                 }
             )
@@ -202,13 +272,16 @@ fun MessageItem(
         horizontalAlignment = if (isFromCurrentUser) Alignment.End else Alignment.Start
     ) {
         // Afficher le nom de l'expu00e9diteur pour les messages qui ne sont pas de l'utilisateur actuel
-        if (!isFromCurrentUser && !message.senderName.isNullOrBlank()) {
-            Text(
-                text = message.senderName,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
-            )
+        if (!isFromCurrentUser) {
+            val senderName = message.senderName
+            if (senderName != null && senderName.isNotBlank()) {
+                Text(
+                    text = senderName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                )
+            }
         }
         
         // Message bubble
