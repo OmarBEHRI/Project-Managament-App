@@ -17,38 +17,38 @@ data class Chat(
     val type: ChatType = ChatType.DIRECT,
     val name: String? = null,
     val participants: List<String> = emptyList(),
-    @get:PropertyName("project_id")
+    @PropertyName("project_id")
     val projectId: String? = null,
-    @get:PropertyName("last_message")
+    @PropertyName("last_message")
     val lastMessage: Message? = null,
-    @get:PropertyName("unread_count")
+    @PropertyName("unread_count")
     val unreadCount: Map<String, Int> = emptyMap(),
     @ServerTimestamp
-    @get:PropertyName("created_at")
+    @PropertyName("created_at")
     val createdAt: Date = Date(),
     @ServerTimestamp
-    @get:PropertyName("updated_at")
+    @PropertyName("updated_at")
     val updatedAt: Date = Date()
 )
 
 data class Message(
     @DocumentId
     val id: String = "",
-    @get:PropertyName("chat_id")
+    @PropertyName("chat_id")
     val chatId: String = "",
-    @get:PropertyName("sender_id")
+    @PropertyName("sender_id")
     val senderId: String = "",
-    @get:PropertyName("sender_name")
+    @PropertyName("sender_name")
     val senderName: String? = null,
     val content: String = "",
     val type: MessageType = MessageType.TEXT,
     val attachments: List<FileAttachment> = emptyList(),
-    @get:PropertyName("replied_to")
+    @PropertyName("replied_to")
     val repliedTo: Message? = null,
-    @get:PropertyName("read_by")
+    @PropertyName("read_by")
     val readBy: List<String> = emptyList(),
     @ServerTimestamp
-    @get:PropertyName("sent_at")
+    @PropertyName("sent_at")
     val sentAt: Date? = null,
     val status: MessageStatus = MessageStatus.SENT
 )

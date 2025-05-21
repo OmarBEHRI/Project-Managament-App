@@ -115,21 +115,22 @@ fun ChatScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(uiState.messages) { message ->
-                            // Ajout d'un log pour du00e9boguer
+                            // Récupérer l'ID de l'utilisateur actuel
                             val currentUserId = viewModel.getCurrentUserId()
                             
                             // S'assurer que senderId n'est pas null ou vide
-                            val senderId = message.senderId.takeIf { it.isNotBlank() } ?: "unknown"
+                            val senderId = message.senderId?.takeIf { it.isNotBlank() } ?: "unknown"
                             
-                            // Du00e9terminer si le message vient de l'utilisateur actuel
-                            val isFromCurrentUser = senderId == currentUserId
+                            // Déterminer si le message vient de l'utilisateur actuel
+                            // Forcer la comparaison avec trim() pour éviter les problèmes d'espaces
+                            val isFromCurrentUser = senderId.trim() == currentUserId.trim()
                             
-                            // Afficher les informations de du00e9bogage dans la console
-                            println("DEBUG: Message ID: ${message.id}, Content: ${message.content}")
-                            println("DEBUG: Message senderId: $senderId, CurrentUserId: $currentUserId")
-                            println("DEBUG: isFromCurrentUser: $isFromCurrentUser")
+                            // Afficher les informations de débogage dans la console
+                            println("DEBUG DISPLAY: Message ID: ${message.id}, Content: ${message.content.take(20)}...")
+                            println("DEBUG DISPLAY: Message senderId: '$senderId', CurrentUserId: '$currentUserId'")
+                            println("DEBUG DISPLAY: isFromCurrentUser: $isFromCurrentUser")
                             
-                            // Ajouter un Spacer pour su00e9parer les messages
+                            // Ajouter un Spacer pour séparer les messages
                             Spacer(modifier = Modifier.height(8.dp))
                             
                             MessageItem(
