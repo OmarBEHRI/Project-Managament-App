@@ -1,5 +1,6 @@
 package com.example.projectmanager.ui.components
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,8 +11,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.projectmanager.ui.home.HomeViewModel
 import com.example.projectmanager.ui.home.ProjectStats
 
@@ -20,100 +23,48 @@ fun DashboardContent(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
     onProjectClick: (String) -> Unit,
-    onTaskClick: (String) -> Unit
+    onTaskClick: (String) -> Unit,
+    onNavigateToAnalytics: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Welcome message
-        item {
-            Text(
-                text = "Welcome back, ${uiState.user?.displayName ?: "User"}!",
-                style = MaterialTheme.typography.headlineMedium
-            )
-        }
+    // Use the enhanced DashboardScreen with analytics
+    val dashboardViewModel = hiltViewModel<com.example.projectmanager.ui.dashboard.DashboardViewModel>()
 
-        // Project Stats
-        item {
-            ProjectStatsSection(stats = uiState.projectStats)
-        }
-
-        // Recent Projects
-        item {
-            Text(
-                text = "Recent Projects",
-                style = MaterialTheme.typography.titleLarge
-            )
-        }
-
-        if (uiState.recentProjects.isEmpty()) {
-            item {
-                EmptyStateMessage(
-                    icon = Icons.Default.Folder,
-                    message = "No recent projects"
-                )
+    // Get the context for toast messages
+    val context = LocalContext.current
+    
+    // Create a simple AppNavigator implementation for the DashboardScreen
+    val appNavigator = remember {
+        object : com.example.projectmanager.navigation.AppNavigator {
+            override fun navigateBack() {}
+            override fun navigateToSignIn() {}
+            override fun navigateToSignUp() {}
+            override fun navigateToForgotPassword() {}
+            override fun navigateToHome() {}
+            override fun navigateToProjects() {}
+            override fun navigateToProject(projectId: String) { onProjectClick(projectId) }
+            override fun navigateToTasks() {}
+            override fun navigateToTask(taskId: String) { onTaskClick(taskId) }
+            override fun navigateToProfile() {}
+            override fun navigateToSettings() {}
+            override fun navigateToCreateProject() {}
+            override fun navigateToCreateTask(projectId: String?) {}
+            override fun navigateToEditProject(projectId: String) {}
+            override fun navigateToEditTask(taskId: String) {}
+            override fun navigateToAnalyticsDashboard() {
+                // Call the navigation callback to go to the Analytics Dashboard
+                onNavigateToAnalytics()
             }
-        } else {
-            items(uiState.recentProjects) { project ->
-                ProjectListItem(
-                    project = project,
-                    onClick = { onProjectClick(project.id) }
-                )
-            }
-        }
-
-        // Pending Tasks
-        item {
-            Text(
-                text = "Pending Tasks",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-        }
-
-        if (uiState.pendingTasks.isEmpty()) {
-            item {
-                EmptyStateMessage(
-                    icon = Icons.Default.Assignment,
-                    message = "No pending tasks"
-                )
-            }
-        } else {
-            items(uiState.pendingTasks) { task ->
-                TaskListItem(
-                    task = task,
-                    onClick = { onTaskClick(task.id) }
-                )
-            }
-        }
-
-        // Error message
-        uiState.error?.let { error ->
-            item {
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                )
-            }
+            override fun isUserSignedIn(): Boolean = true
         }
     }
 
-    if (uiState.isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    }
+    // Use our enhanced DashboardScreen
+    com.example.projectmanager.ui.dashboard.DashboardScreen(
+        viewModel = dashboardViewModel,
+        appNavigator = appNavigator
+    )
 }
 
 @Composable
@@ -137,9 +88,10 @@ fun ProjectStatsSection(stats: ProjectStats) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // Changed from "Total Projects" to "Projects" to avoid duplication
                 StatItem(
                     icon = Icons.Default.Folder,
-                    label = "Total Projects",
+                    label = "Projects",
                     value = stats.totalProjects.toString()
                 )
                 StatItem(
@@ -229,4 +181,4 @@ fun EmptyStateMessage(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
-} 
+}

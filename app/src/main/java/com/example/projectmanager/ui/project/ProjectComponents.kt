@@ -74,12 +74,15 @@ fun ProjectDetailsTopBar(
 
 // Project header with summary info
 @Composable
-fun ProjectHeader(project: Project) {
+fun ProjectHeader(
+    project: Project,
+    taskStats: TaskStats = TaskStats()
+) {
     val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     val isOverdue = project.deadline?.let { it.time < System.currentTimeMillis() } ?: false
-    val progressPercentage = if (project.totalTasks > 0) {
-        (project.completedTasks.toFloat() / project.totalTasks.toFloat()) * 100f
-    } else 0f
+    
+    // Use the taskStats for progress calculation (excluding canceled tasks)
+    val progressPercentage = taskStats.completedPercentage
     
     Card(
         modifier = Modifier
@@ -163,7 +166,7 @@ fun ProjectHeader(project: Project) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "${project.completedTasks}/${project.totalTasks} tasks (${progressPercentage.toInt()}%)",
+                        text = "${taskStats.completed}/${taskStats.active} active tasks (${progressPercentage.toInt()}%)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -171,16 +174,40 @@ fun ProjectHeader(project: Project) {
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                LinearProgressIndicator(
-                    progress = { progressPercentage / 100f },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = when {
-                        progressPercentage >= 100f -> MaterialTheme.colorScheme.secondary
-                        progressPercentage >= 75f -> MaterialTheme.colorScheme.primary
-                        progressPercentage >= 25f -> MaterialTheme.colorScheme.tertiary
-                        else -> MaterialTheme.colorScheme.error
-                    }
-                )
+                // Enhanced progress bar with rounded corners and track color
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progressPercentage / 100f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                when {
+                                    progressPercentage >= 100f -> MaterialTheme.colorScheme.secondary
+                                    progressPercentage >= 75f -> MaterialTheme.colorScheme.primary
+                                    progressPercentage >= 25f -> MaterialTheme.colorScheme.tertiary
+                                    else -> MaterialTheme.colorScheme.error
+                                }
+                            )
+                    )
+                }
+                
+                // Add a small note about canceled tasks if there are any
+                if (taskStats.total > taskStats.active) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${taskStats.total - taskStats.active} canceled tasks excluded",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.align(Alignment.End)
+                    )
+                }
             }
         }
     }

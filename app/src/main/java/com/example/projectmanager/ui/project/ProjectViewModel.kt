@@ -14,6 +14,13 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 
+data class TaskStats(
+    val total: Int = 0,
+    val completed: Int = 0,
+    val active: Int = 0,  // All tasks excluding canceled ones
+    val completedPercentage: Float = 0f
+)
+
 data class ProjectUiState(
     val project: Project? = null,
     val tasks: List<Task> = emptyList(),
@@ -21,6 +28,7 @@ data class ProjectUiState(
     val userSuggestions: List<User> = emptyList(),
     val comments: List<Comment> = emptyList(),
     val attachments: List<FileAttachment> = emptyList(),
+    val taskStats: TaskStats = TaskStats(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val searchQuery: String = ""
@@ -93,9 +101,13 @@ class ProjectViewModel @Inject constructor(
                         println("ProjectViewModel: Task ${task.id}: ${task.title}, assigned to: ${task.assignedTo}")
                     }
                     
+                    // Calculate task statistics excluding canceled tasks
+                    val taskStats = calculateTaskStats(tasks)
+                    
                     _uiState.update {
                         it.copy(
                             tasks = tasks,
+                            taskStats = taskStats,
                             isLoading = false,
                             error = null
                         )
@@ -415,5 +427,34 @@ class ProjectViewModel @Inject constructor(
     // Clear search query and suggestions
     fun clearSearch() {
         _uiState.update { it.copy(userSuggestions = emptyList(), searchQuery = "") }
+    }
+    
+    /**
+     * Calculate task statistics excluding canceled tasks
+     */
+    private fun calculateTaskStats(tasks: List<Task>): TaskStats {
+        // Filter out canceled tasks
+        val activeTasks = tasks.filter { it.status != TaskStatus.CANCELLED }
+        
+        // Count tasks as completed if either isCompleted flag is true OR status is COMPLETED
+        val completedTasks = activeTasks.filter { it.isCompleted || it.status == TaskStatus.COMPLETED }
+        
+        val total = tasks.size
+        val active = activeTasks.size
+        val completed = completedTasks.size
+        
+        // Calculate completion percentage based on active tasks (excluding canceled)
+        val completedPercentage = if (active > 0) {
+            (completed.toFloat() / active.toFloat()) * 100f
+        } else {
+            0f
+        }
+        
+        return TaskStats(
+            total = total,
+            active = active,
+            completed = completed,
+            completedPercentage = completedPercentage
+        )
     }
 }

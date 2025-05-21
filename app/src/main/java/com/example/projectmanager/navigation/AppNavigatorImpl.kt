@@ -82,6 +82,10 @@ class AppNavigatorImpl @Inject constructor(
         navController?.navigate("$EDIT_TASK_ROUTE/$taskId")
     }
 
+    override fun navigateToAnalyticsDashboard() {
+        navController?.navigate(ANALYTICS_DASHBOARD_ROUTE)
+    }
+
     override fun isUserSignedIn(): Boolean {
         return auth.currentUser != null
     }
@@ -98,5 +102,6 @@ class AppNavigatorImpl @Inject constructor(
         const val CREATE_TASK_ROUTE = "create_task"
         const val EDIT_PROJECT_ROUTE = "edit_project"
         const val EDIT_TASK_ROUTE = "edit_task"
+        const val ANALYTICS_DASHBOARD_ROUTE = "analytics_dashboard"
     }
 } 

@@ -131,19 +131,29 @@ fun ProjectScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         // Project header with summary info
-                        ProjectHeader(project = project)
+                        ProjectHeader(
+                            project = project,
+                            taskStats = uiState.taskStats
+                        )
                         
                         // Tab navigation
-                        TabRow(
+                        ScrollableTabRow(
                             selectedTabIndex = selectedTabIndex,
                             containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            edgePadding = 0.dp
                         ) {
                             tabTitles.forEachIndexed { index, title ->
                                 Tab(
                                     selected = selectedTabIndex == index,
                                     onClick = { selectedTabIndex = index },
-                                    text = { Text(title) },
+                                    text = { 
+                                        Text(
+                                            text = title,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        ) 
+                                    },
                                     icon = {
                                         Icon(
                                             imageVector = when (index) {
@@ -154,9 +164,11 @@ fun ProjectScreen(
                                                 4 -> Icons.Outlined.Attachment
                                                 else -> Icons.Outlined.Info
                                             },
-                                            contentDescription = null
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp)
                                         )
-                                    }
+                                    },
+                                    modifier = Modifier.height(56.dp)
                                 )
                             }
                         }
