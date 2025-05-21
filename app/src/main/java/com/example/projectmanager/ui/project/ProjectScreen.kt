@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.projectmanager.data.model.*
+import com.example.projectmanager.navigation.AppNavigator
 import com.example.projectmanager.ui.components.ProjectDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
@@ -37,8 +38,7 @@ import java.util.*
 fun ProjectScreen(
     projectId: String,
     viewModel: ProjectViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit = {},
-    onNavigateToTask: (String) -> Unit = {}
+    appNavigator: AppNavigator
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCreateTaskDialog by remember { mutableStateOf(false) }
@@ -56,10 +56,22 @@ fun ProjectScreen(
 
     Scaffold(
         topBar = {
-            ProjectDetailsTopBar(
-                project = uiState.project,
-                onBackClick = onNavigateBack,
-                isLoading = uiState.isLoading
+            TopAppBar(
+                title = { 
+                    Text(
+                        text = uiState.project?.name ?: "Project Details",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = { appNavigator.navigateBack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -154,7 +166,7 @@ fun ProjectScreen(
                             0 -> ProjectOverviewTab(project = project)
                             1 -> ProjectTasksTabComponent(
                                 tasks = uiState.tasks,
-                                onTaskClick = onNavigateToTask
+                                onTaskClick = { taskId -> appNavigator.navigateToTask(taskId) }
                             )
                             2 -> ProjectMembersTab(
                                 project = project,

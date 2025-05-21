@@ -24,7 +24,8 @@ data class TaskUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isUpdating: Boolean = false,
-    val updateSuccess: Boolean = false
+    val updateSuccess: Boolean = false,
+    val projectName: String = ""
 )
 
 @HiltViewModel
@@ -51,6 +52,10 @@ class TaskViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(TaskUiState())
     val uiState: StateFlow<TaskUiState> = _uiState.asStateFlow()
+    
+    // Project name state for the UI
+    private val _projectName = MutableStateFlow("")
+    val projectName: StateFlow<String> = _projectName.asStateFlow()
 
     fun loadTask(taskId: String) {
         viewModelScope.launch {
@@ -65,6 +70,12 @@ class TaskViewModel @Inject constructor(
                         if (task.assignedTo.isNotEmpty()) {
                             loadAssignedUsers(task.assignedTo)
                         }
+                        
+                        // Fetch project name if we have a project ID
+                        if (task.projectId.isNotEmpty()) {
+                            fetchProjectName(task.projectId)
+                        }
+                        
                         _uiState.update { it.copy(isLoading = false) }
                     } else {
                         _uiState.update { 
@@ -103,14 +114,27 @@ class TaskViewModel @Inject constructor(
                                 id = doc.id,
                                 title = doc.getString("title") ?: "",
                                 description = doc.getString("description") ?: "",
+                                richDescription = null,
                                 projectId = doc.getString("project_id") ?: "",
                                 parentTaskId = doc.getString("parent_task_id"),
+                                subtasks = emptyList(),
                                 assignedTo = (doc.get("assigned_to") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
                                 createdBy = doc.getString("created_by") ?: "",
                                 status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.TODO,
                                 priority = doc.getString("priority")?.let { TaskPriority.valueOf(it) } ?: TaskPriority.MEDIUM,
+                                startDate = doc.getDate("start_date"),
                                 dueDate = doc.getDate("due_date"),
-                                isCompleted = doc.getBoolean("completed") ?: false
+                                createdAt = doc.getDate("createdAt"),
+                                updatedAt = doc.getDate("updatedAt"),
+                                tags = (doc.get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                                isCompleted = doc.getBoolean("completed") ?: false,
+                                completedAt = doc.getDate("completed_at"),
+                                isOverdue = doc.getBoolean("overdue") ?: false,
+                                estimatedHours = doc.getDouble("estimated_hours")?.toFloat(),
+                                actualHours = doc.getDouble("actual_hours")?.toFloat(),
+                                milestoneId = doc.getString("milestone_id"),
+                                order = doc.getLong("order")?.toInt() ?: 0,
+                                watchers = (doc.get("watchers") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                             )
                         } catch (e: Exception) {
                             println("Error mapping subtask document ${doc.id}: ${e.message}")
@@ -121,22 +145,32 @@ class TaskViewModel @Inject constructor(
                 }
                 
                 subtasksFlow.collect { subtasks ->
-                    println("Found ${subtasks.size} subtasks for task $parentTaskId")
-                    _uiState.update {
-                        it.copy(
-                            subtasks = subtasks,
-                            error = null
-                        )
-                    }
+                    _uiState.update { it.copy(subtasks = subtasks) }
                 }
             } catch (e: Exception) {
                 println("Error loading subtasks: ${e.message}")
                 e.printStackTrace()
-                _uiState.update {
-                    it.copy(
-                        error = e.message ?: "Failed to load subtasks"
-                    )
+            }
+        }
+    }
+    
+    private fun fetchProjectName(projectId: String) {
+        viewModelScope.launch {
+            try {
+                val projectDoc = firestore.collection("projects").document(projectId).get().await()
+                if (projectDoc.exists()) {
+                    val projectName = projectDoc.getString("name") ?: ""
+                    _projectName.value = projectName
+                    _uiState.update { it.copy(projectName = projectName) }
+                    println("Fetched project name: $projectName for project ID: $projectId")
+                } else {
+                    _projectName.value = "Unknown Project"
+                    println("Project document does not exist for ID: $projectId")
                 }
+            } catch (e: Exception) {
+                _projectName.value = "Error Loading Project"
+                println("Error fetching project name: ${e.message}")
+                e.printStackTrace()
             }
         }
     }

@@ -1,21 +1,27 @@
 package com.example.projectmanager.ui.task
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.projectmanager.navigation.AppNavigator
 import com.example.projectmanager.ui.tasks.TaskDetailsScreen
+import com.example.projectmanager.ui.task.TaskViewModel
 
 @Composable
 fun TaskScreen(
     taskId: String,
-    projectId: String = "",
-    onNavigateBack: () -> Unit = {}
+    appNavigator: AppNavigator
 ) {
-    // Use our new TaskDetailsScreen implementation
+    // Use our TaskDetailsScreen implementation with proper navigation
     TaskDetailsScreen(
         taskId = taskId,
-        onNavigateBack = onNavigateBack,
+        onNavigateBack = { appNavigator.navigateBack() },
         onNavigateToProject = { projectId -> 
-            // This would navigate to the project screen, but we'll just use the back navigation for now
-            onNavigateBack()
+            // Navigate to the project details screen
+            appNavigator.navigateToProject(projectId)
+        },
+        onTaskClick = { subtaskId ->
+            // Navigate to the subtask details
+            appNavigator.navigateToTask(subtaskId)
         }
     )
 }

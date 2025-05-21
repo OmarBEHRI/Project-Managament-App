@@ -56,7 +56,8 @@ fun MainNavigation(
             )
         ) { backStackEntry ->
             ProjectScreen(
-                projectId = backStackEntry.arguments?.getString("projectId") ?: ""
+                projectId = backStackEntry.arguments?.getString("projectId") ?: "",
+                appNavigator = appNavigator
             )
         }
 
@@ -65,7 +66,8 @@ fun MainNavigation(
             TasksScreen(
                 onTaskClick = { taskId ->
                     navController.navigate("${Routes.TASK_DETAIL_ROUTE}/$taskId")
-                }
+                },
+                appNavigator = appNavigator
             )
         }
 
@@ -76,7 +78,8 @@ fun MainNavigation(
             )
         ) { backStackEntry ->
             TaskScreen(
-                taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+                taskId = backStackEntry.arguments?.getString("taskId") ?: "",
+                appNavigator = appNavigator
             )
         }
 

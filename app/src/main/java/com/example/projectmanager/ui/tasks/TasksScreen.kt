@@ -34,12 +34,14 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
+import com.example.projectmanager.navigation.AppNavigator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasksScreen(
     viewModel: TasksViewModel = hiltViewModel(),
-    onTaskClick: (String) -> Unit = {}
+    onTaskClick: (String) -> Unit = {},
+    appNavigator: AppNavigator? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -60,6 +62,17 @@ fun TasksScreen(
                             fontWeight = FontWeight.Bold
                         )
                     ) 
+                },
+                navigationIcon = {
+                    if (appNavigator != null) {
+                        IconButton(onClick = { appNavigator.navigateBack() }) {
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 },
                 actions = {
                     IconButton(onClick = { showFilterSheet = true }) {
@@ -124,11 +137,18 @@ fun TasksScreen(
                         onCreateClick = { showCreateDialog = true }
                     )
                 }
-                else -> {
+                uiState.tasks.isNotEmpty() -> {
                     TaskList(
                         tasks = uiState.tasks,
-                        onTaskClick = onTaskClick,
-                        onDeleteTask = { taskId -> 
+                        onTaskClick = { taskId ->
+                            // Use appNavigator if available, otherwise use the provided onTaskClick
+                            if (appNavigator != null) {
+                                appNavigator.navigateToTask(taskId)
+                            } else {
+                                onTaskClick(taskId)
+                            }
+                        },
+                        onDeleteTask = { taskId ->
                             showDeleteConfirmation = taskId
                         }
                     )
@@ -220,30 +240,33 @@ fun TaskList(
                 enableDismissFromStartToEnd = false,
                 enableDismissFromEndToStart = true,
                 backgroundContent = {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.errorContainer
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 16.dp)
+                    // Only show the delete background when actually swiping
+                    if (dismissState.dismissDirection != null) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.errorContainer
                         ) {
-                            Row(
-                                modifier = Modifier.align(Alignment.CenterEnd),
-                                verticalAlignment = Alignment.CenterVertically
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 16.dp)
                             ) {
-                                Text(
-                                    text = "Delete",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
+                                Row(
+                                    modifier = Modifier.align(Alignment.CenterEnd),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Delete",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
                             }
                         }
                     }

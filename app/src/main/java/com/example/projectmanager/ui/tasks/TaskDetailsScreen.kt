@@ -435,6 +435,72 @@ fun TaskDetailsScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
+                    // Project Information section
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    ElevatedCard(
+                        onClick = { task.projectId.takeIf { it.isNotEmpty() }?.let { onNavigateToProject(it) } },
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Folder,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "PROJECT",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = viewModel.projectName.value.ifEmpty { "Loading project..." },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                            IconButton(
+                                onClick = { task.projectId.takeIf { it.isNotEmpty() }?.let { onNavigateToProject(it) } },
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
+                                        shape = CircleShape
+                                    )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.OpenInNew,
+                                    contentDescription = "Go to project",
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        }
+                    }
+                    
                     // Description with enhanced styling
                     Spacer(modifier = Modifier.height(16.dp))
                     
