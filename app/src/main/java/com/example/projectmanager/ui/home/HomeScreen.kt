@@ -25,6 +25,10 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("Dashboard") },
                 actions = {
+                    // Add Analytics Dashboard button
+                    IconButton(onClick = { appNavigator.navigateToAnalyticsDashboard() }) {
+                        Icon(Icons.Default.BarChart, contentDescription = "Analytics Dashboard")
+                    }
                     IconButton(onClick = { appNavigator.navigateToProfile() }) {
                         Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
@@ -84,6 +88,9 @@ fun HomeScreen(
                 },
                 onTaskClick = { taskId ->
                     appNavigator.navigateToTask(taskId)
+                },
+                onNavigateToAnalytics = {
+                    appNavigator.navigateToAnalyticsDashboard()
                 }
             )
             // Projects and Tasks screens are handled by navigation

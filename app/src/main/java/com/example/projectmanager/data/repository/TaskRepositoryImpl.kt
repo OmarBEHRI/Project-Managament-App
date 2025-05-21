@@ -271,6 +271,21 @@ class TaskRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getCompletedTasks(limit: Int): Flow<List<Task>> = flow {
+        try {
+            val snapshot = tasksCollection
+                .whereEqualTo("isCompleted", true)
+                .orderBy("completedAt", Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+            val tasks = snapshot.toObjects(Task::class.java)
+            emit(tasks)
+        } catch (e: Exception) {
+            emit(emptyList())
+        }
+    }
+
     override suspend fun createTask(task: Task): Resource<Task> = try {
         val documentRef = tasksCollection.document()
         val newTask = task.copy(id = documentRef.id)

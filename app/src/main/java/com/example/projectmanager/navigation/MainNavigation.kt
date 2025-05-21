@@ -13,6 +13,7 @@ import com.example.projectmanager.ui.task.TaskScreen
 import com.example.projectmanager.ui.tasks.TasksScreen
 import com.example.projectmanager.ui.profile.ProfileScreen
 import com.example.projectmanager.ui.settings.SettingsScreen
+import com.example.projectmanager.ui.dashboard.AnalyticsDashboardScreen
 import com.example.projectmanager.navigation.AppNavigatorImpl.Companion as Routes
 
 @Composable
@@ -143,6 +144,15 @@ fun MainNavigation(
         ) { backStackEntry ->
             // TODO: Implement EditTaskScreen
             val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+        }
+        
+        // Analytics Dashboard
+        composable(Routes.ANALYTICS_DASHBOARD_ROUTE) {
+            AnalyticsDashboardScreen(
+                onNavigateBack = {
+                    navController.navigateUp()
+                }
+            )
         }
     }
 } 

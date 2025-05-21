@@ -16,5 +16,6 @@ interface AppNavigator {
     fun navigateToCreateTask(projectId: String? = null)
     fun navigateToEditProject(projectId: String)
     fun navigateToEditTask(taskId: String)
+    fun navigateToAnalyticsDashboard()
     fun isUserSignedIn(): Boolean
-} 
+}

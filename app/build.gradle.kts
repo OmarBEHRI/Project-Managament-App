@@ -156,3 +156,9 @@ dependencies {
 }
 
 apply(plugin = "com.google.gms.google-services")
+
+// Simple fix for the "Changes are not tracked" error
+tasks.configureEach {
+    // Force all tasks to run from scratch
+    outputs.upToDateWhen { false }
+}
