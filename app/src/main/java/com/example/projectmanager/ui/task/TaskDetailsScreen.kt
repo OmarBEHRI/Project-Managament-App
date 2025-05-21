@@ -1,8 +1,14 @@
 package com.example.projectmanager.ui.task
 
 import android.net.Uri
+import androidx.compose.foundation.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -10,15 +16,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.projectmanager.data.model.*
 import com.example.projectmanager.ui.components.*
 import java.util.*
 import java.text.SimpleDateFormat
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -219,70 +227,182 @@ fun TaskHeader(
     onStatusChange: (TaskStatus) -> Unit,
     onPriorityChange: (TaskPriority) -> Unit
 ) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
-        // Status and priority
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            FilterChip(
-                selected = true,
-                onClick = { /* Show status menu */ },
-                label = { Text(task.status.name) },
-                leadingIcon = {
+            // Task completion status indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Modern checkbox design
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(
+                            color = if (task.isCompleted) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.surface,
+                            shape = CircleShape
+                        )
+                        .border(
+                            width = 2.dp,
+                            color = if (task.isCompleted) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.outline,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (task.isCompleted) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Completed",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Text(
+                    text = if (task.isCompleted) "Completed" else "In Progress",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (task.isCompleted) 
+                        MaterialTheme.colorScheme.primary
+                    else 
+                        MaterialTheme.colorScheme.onSurface
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Status and priority chips in a horizontal scrollable row
+            SingleRowChips(
+                task = task,
+                onStatusChange = onStatusChange,
+                onPriorityChange = onPriorityChange
+            )
+            
+            // Due date with calendar icon
+            task.dueDate?.let { dueDate ->
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
-                        imageVector = when (task.status) {
-                            TaskStatus.TODO -> Icons.Default.RadioButtonUnchecked
-                            TaskStatus.IN_PROGRESS -> Icons.Default.PlayCircleOutline
-                            TaskStatus.REVIEW -> Icons.Default.PauseCircleOutline
-                            TaskStatus.COMPLETED -> Icons.Default.CheckCircle
-                            TaskStatus.BLOCKED -> Icons.Default.Block
-                            TaskStatus.CANCELLED -> Icons.Default.Cancel
-                        },
+                        imageVector = Icons.Default.CalendarToday,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        tint = if (task.isOverdue) 
+                            MaterialTheme.colorScheme.error 
+                        else 
+                            MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Due ${formatDate(dueDate)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (task.isOverdue) 
+                            MaterialTheme.colorScheme.error 
+                        else 
+                            MaterialTheme.colorScheme.onSurface
                     )
                 }
-            )
-
-            FilterChip(
-                selected = true,
-                onClick = { /* Show priority menu */ },
-                label = { Text(task.priority.name) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = when (task.priority) {
-                            TaskPriority.LOW -> Icons.Default.ArrowDownward
-                            TaskPriority.MEDIUM -> Icons.Default.Remove
-                            TaskPriority.HIGH -> Icons.Default.ArrowUpward
-                            TaskPriority.URGENT -> Icons.Default.PriorityHigh
-                        },
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            )
+            }
         }
+    }
+}
 
-        // Due date
-        task.dueDate?.let { dueDate ->
-            Spacer(modifier = Modifier.height(8.dp))
-            AssistChip(
-                onClick = { /* Show date picker */ },
-                label = { Text("Due ${formatDate(dueDate)}") },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Event,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
+@Composable
+fun SingleRowChips(
+    task: Task,
+    onStatusChange: (TaskStatus) -> Unit,
+    onPriorityChange: (TaskPriority) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Status chip
+        SuggestionChip(
+            onClick = { /* Show status menu */ },
+            label = { Text(task.status.name.replace('_', ' ')) },
+            icon = {
+                Icon(
+                    imageVector = when (task.status) {
+                        TaskStatus.TODO -> Icons.Default.RadioButtonUnchecked
+                        TaskStatus.IN_PROGRESS -> Icons.Default.PlayCircleOutline
+                        TaskStatus.REVIEW -> Icons.Default.PauseCircleOutline
+                        TaskStatus.COMPLETED -> Icons.Default.CheckCircle
+                        TaskStatus.BLOCKED -> Icons.Default.Block
+                        TaskStatus.CANCELLED -> Icons.Default.Cancel
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            colors = SuggestionChipDefaults.suggestionChipColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                iconContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        )
+
+        // Priority chip
+        SuggestionChip(
+            onClick = { /* Show priority menu */ },
+            label = { Text(task.priority.name) },
+            icon = {
+                Icon(
+                    imageVector = when (task.priority) {
+                        TaskPriority.LOW -> Icons.Default.ArrowDownward
+                        TaskPriority.MEDIUM -> Icons.Default.Remove
+                        TaskPriority.HIGH -> Icons.Default.ArrowUpward
+                        TaskPriority.URGENT -> Icons.Default.PriorityHigh
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            colors = SuggestionChipDefaults.suggestionChipColors(
+                containerColor = when (task.priority) {
+                    TaskPriority.LOW -> MaterialTheme.colorScheme.tertiaryContainer
+                    TaskPriority.MEDIUM -> MaterialTheme.colorScheme.secondaryContainer
+                    TaskPriority.HIGH -> MaterialTheme.colorScheme.errorContainer
+                    TaskPriority.URGENT -> MaterialTheme.colorScheme.errorContainer
+                },
+                labelColor = when (task.priority) {
+                    TaskPriority.LOW -> MaterialTheme.colorScheme.onTertiaryContainer
+                    TaskPriority.MEDIUM -> MaterialTheme.colorScheme.onSecondaryContainer
+                    TaskPriority.HIGH -> MaterialTheme.colorScheme.onErrorContainer
+                    TaskPriority.URGENT -> MaterialTheme.colorScheme.onErrorContainer
+                },
+                iconContentColor = when (task.priority) {
+                    TaskPriority.LOW -> MaterialTheme.colorScheme.onTertiaryContainer
+                    TaskPriority.MEDIUM -> MaterialTheme.colorScheme.onSecondaryContainer
+                    TaskPriority.HIGH -> MaterialTheme.colorScheme.onErrorContainer
+                    TaskPriority.URGENT -> MaterialTheme.colorScheme.onErrorContainer
                 }
             )
-        }
+        )
     }
 }
 
@@ -292,44 +412,103 @@ fun TaskDetailsSection(
     task: Task,
     onAssigneeClick: (String) -> Unit
 ) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
-        Text(
-            text = "Description",
-            style = MaterialTheme.typography.titleMedium
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = task.description,
-            style = MaterialTheme.typography.bodyMedium
-        )
-
-        if (task.assignedTo.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Assignees",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Description section with icon
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp)
             ) {
-                task.assignedTo.forEach { userId ->
-                    AssistChip(
-                        onClick = { onAssigneeClick(userId) },
-                        label = { Text(userId) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                Icon(
+                    imageVector = Icons.Default.Description,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Description",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            
+            // Description text in a surface with rounded corners
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ) {
+                Text(
+                    text = task.description.ifEmpty { "No description provided" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+
+            // Assignees section
+            if (task.assignedTo.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Assignees header with icon
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Group,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Assignees",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                
+                // Assignee chips in a flow layout
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    task.assignedTo.forEach { userId ->
+                        SuggestionChip(
+                            onClick = { onAssigneeClick(userId) },
+                            label = { Text(userId) },
+                            icon = {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                iconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -341,27 +520,127 @@ fun SubtasksSection(
     subtasks: List<Task>,
     onSubtaskClick: (String) -> Unit
 ) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Text(
-            text = "Subtasks",
-            style = MaterialTheme.typography.titleMedium
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        subtasks.forEach { subtask ->
-            ListItem(
-                headlineContent = { Text(subtask.title) },
-                leadingContent = {
-                    Checkbox(
-                        checked = subtask.isCompleted,
-                        onCheckedChange = null
-                    )
-                },
-                modifier = Modifier.clickable { onSubtaskClick(subtask.id) }
-            )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Subtasks header with icon
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SubdirectoryArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Subtasks",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "${subtasks.count { it.isCompleted }}/${subtasks.size}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            // Divider for visual separation
+            Divider(modifier = Modifier.padding(bottom = 8.dp))
+            
+            // Subtask list with modern styling
+            subtasks.forEach { subtask ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable { onSubtaskClick(subtask.id) },
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (subtask.isCompleted) 
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) 
+                    else 
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Modern checkbox design
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .background(
+                                    color = if (subtask.isCompleted) 
+                                        MaterialTheme.colorScheme.primary 
+                                    else 
+                                        MaterialTheme.colorScheme.surface,
+                                    shape = CircleShape
+                                )
+                                .border(
+                                    width = 2.dp,
+                                    color = if (subtask.isCompleted) 
+                                        MaterialTheme.colorScheme.primary 
+                                    else 
+                                        MaterialTheme.colorScheme.outline,
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (subtask.isCompleted) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Completed",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.width(12.dp))
+                        
+                        Column {
+                            Text(
+                                text = subtask.title,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (subtask.isCompleted) 
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f) 
+                                else 
+                                    MaterialTheme.colorScheme.onSurface,
+                                textDecoration = if (subtask.isCompleted) 
+                                    TextDecoration.LineThrough 
+                                else 
+                                    TextDecoration.None
+                            )
+                            
+                            if (subtask.dueDate != null) {
+                                Text(
+                                    text = "Due ${formatDate(subtask.dueDate!!)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (subtask.isOverdue) 
+                                        MaterialTheme.colorScheme.error 
+                                    else 
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

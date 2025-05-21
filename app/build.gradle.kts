@@ -119,6 +119,9 @@ dependencies {
     implementation("com.google.firebase:firebase-appcheck:17.1.1")
     implementation("com.google.firebase:firebase-appcheck-playintegrity:17.1.1")
     implementation("com.google.firebase:firebase-appcheck-debug:17.1.1")
+    
+    // Gemini AI API
+    implementation("com.google.ai.client.generativeai:generativeai:0.2.2")
     implementation("com.google.firebase:firebase-appcheck-ktx:17.1.1")
     
     // Firebase Auth UI

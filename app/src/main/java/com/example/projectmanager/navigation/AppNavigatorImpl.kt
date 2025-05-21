@@ -89,23 +89,23 @@ class AppNavigatorImpl @Inject constructor(
     override fun isUserSignedIn(): Boolean {
         return auth.currentUser != null
     }
-    
+
     // Chat navigation
     override fun navigateToChats() {
         navController?.navigate(CHATS_ROUTE)
     }
-    
+
     override fun navigateToChat(chatId: String) {
         navController?.navigate("$CHAT_DETAIL_ROUTE/$chatId")
     }
-    
+
     override fun navigateToNewChat(projectId: String?) {
         navController?.navigate(
             if (projectId != null) "$NEW_CHAT_ROUTE?projectId=$projectId"
             else NEW_CHAT_ROUTE
         )
     }
-    
+
     override fun navigateToChatSettings(chatId: String) {
         navController?.navigate("$CHAT_SETTINGS_ROUTE/$chatId")
     }
@@ -123,7 +123,7 @@ class AppNavigatorImpl @Inject constructor(
         const val EDIT_PROJECT_ROUTE = "edit_project"
         const val EDIT_TASK_ROUTE = "edit_task"
         const val ANALYTICS_DASHBOARD_ROUTE = "analytics_dashboard"
-        
+
         // Chat routes
         const val CHATS_ROUTE = "chats"
         const val CHAT_DETAIL_ROUTE = "chat"

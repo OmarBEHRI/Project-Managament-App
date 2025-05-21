@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import com.example.projectmanager.ui.project.AiTaskGenerationDialog
+import com.example.projectmanager.ui.project.AiTaskAssignmentDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +44,9 @@ fun ProjectScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCreateTaskDialog by remember { mutableStateOf(false) }
+    var showAiTaskGenerationDialog by remember { mutableStateOf(false) }
+    var showAiTaskAssignmentDialog by remember { mutableStateOf(false) }
+    var showEditMetricsDialog by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabTitles = listOf("Overview", "Tasks", "Members", "Comments", "Attachments")
     
@@ -77,15 +82,58 @@ fun ProjectScreen(
         floatingActionButton = {
             // Only show FAB if user is a manager and we're on the Tasks tab
             if (currentUserIsManager && selectedTabIndex == 1 && !uiState.isLoading && uiState.project != null) {
-                FloatingActionButton(
-                    onClick = { showCreateTaskDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add Task",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
+                var showMenu by remember { mutableStateOf(false) }
+                
+                Box {
+                    FloatingActionButton(
+                        onClick = { showMenu = true },
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Task Options",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.width(200.dp)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Add Task Manually") },
+                            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                            onClick = {
+                                showCreateTaskDialog = true
+                                showMenu = false
+                            }
+                        )
+                        
+                        // Only show AI task generation if there are no tasks yet
+                        if (uiState.tasks.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("Generate Tasks with AI") },
+                                leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                                onClick = {
+                                    showAiTaskGenerationDialog = true
+                                    showMenu = false
+                                }
+                            )
+                        }
+                        
+                        // Only show AI task assignment if there are tasks and team members
+                        if (uiState.tasks.isNotEmpty() && uiState.members.isNotEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("Assign Tasks with AI") },
+                                leadingIcon = { Icon(Icons.Default.AssignmentInd, contentDescription = null) },
+                                onClick = {
+                                    showAiTaskAssignmentDialog = true
+                                    showMenu = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -131,19 +179,29 @@ fun ProjectScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         // Project header with summary info
-                        ProjectHeader(project = project)
+                        ProjectHeader(
+                            project = project,
+                            taskStats = uiState.taskStats
+                        )
                         
                         // Tab navigation
-                        TabRow(
+                        ScrollableTabRow(
                             selectedTabIndex = selectedTabIndex,
                             containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            edgePadding = 0.dp
                         ) {
                             tabTitles.forEachIndexed { index, title ->
                                 Tab(
                                     selected = selectedTabIndex == index,
                                     onClick = { selectedTabIndex = index },
-                                    text = { Text(title) },
+                                    text = { 
+                                        Text(
+                                            text = title,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        ) 
+                                    },
                                     icon = {
                                         Icon(
                                             imageVector = when (index) {
@@ -154,19 +212,27 @@ fun ProjectScreen(
                                                 4 -> Icons.Outlined.Attachment
                                                 else -> Icons.Outlined.Info
                                             },
-                                            contentDescription = null
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp)
                                         )
-                                    }
+                                    },
+                                    modifier = Modifier.height(56.dp)
                                 )
                             }
                         }
                         
                         // Tab content
                         when (selectedTabIndex) {
-                            0 -> ProjectOverviewTab(project = project)
+                            0 -> ProjectOverviewTab(
+                                project = project,
+                                isCurrentUserManager = currentUserIsManager,
+                                onEditMetrics = { showEditMetricsDialog = true }
+                            )
                             1 -> ProjectTasksTabComponent(
                                 tasks = uiState.tasks,
-                                onTaskClick = { taskId -> appNavigator.navigateToTask(taskId) }
+                                onTaskClick = { taskId -> appNavigator.navigateToTask(taskId) },
+                                isCurrentUserManager = currentUserIsManager,
+                                onAiAssignTasks = { showAiTaskAssignmentDialog = true }
                             )
                             2 -> ProjectMembersTab(
                                 project = project,
@@ -202,12 +268,59 @@ fun ProjectScreen(
     if (showCreateTaskDialog && uiState.project != null) {
         CreateTaskDialog(
             project = uiState.project!!,
+            availableMembers = uiState.members,
             onDismiss = { showCreateTaskDialog = false },
             onCreateTask = { task ->
                 viewModel.createTask(task)
                 showCreateTaskDialog = false
+            }
+        )
+    }
+    
+    // AI Task Generation Dialog
+    if (showAiTaskGenerationDialog) {
+        AiTaskGenerationDialog(
+            isGenerating = uiState.isGeneratingTasks,
+            generatedTasks = uiState.generatedTasks,
+            error = uiState.taskGenerationError,
+            onGenerateTasks = { viewModel.generateTasksWithAi() },
+            onSaveTasks = { 
+                viewModel.saveGeneratedTasks()
+                showAiTaskGenerationDialog = false
             },
-            availableMembers = uiState.members
+            onDismiss = { showAiTaskGenerationDialog = false }
+        )
+    }
+    
+    // AI Task Assignment Dialog
+    if (showAiTaskAssignmentDialog && uiState.project != null) {
+        AiTaskAssignmentDialog(
+            isAssigning = uiState.isAssigningTasks,
+            taskAssignments = uiState.taskAssignments,
+            tasks = uiState.tasks,
+            members = uiState.members,
+            error = uiState.taskAssignmentError,
+            onAssignTasks = { viewModel.assignTasksWithAi() },
+            onSaveAssignments = { viewModel.saveTaskAssignments() },
+            onDismiss = { showAiTaskAssignmentDialog = false }
+        )
+    }
+    
+    // Edit Project Metrics dialog
+    if (showEditMetricsDialog && uiState.project != null) {
+        EditProjectMetricsDialog(
+            project = uiState.project!!,
+            onDismiss = { showEditMetricsDialog = false },
+            onSaveMetrics = { budgetAmount, budgetCurrency, actualCost, estimatedHours, actualHours ->
+                viewModel.updateProjectMetrics(
+                    budgetAmount = budgetAmount,
+                    budgetCurrency = budgetCurrency,
+                    actualCost = actualCost,
+                    estimatedHours = estimatedHours,
+                    actualHours = actualHours
+                )
+                showEditMetricsDialog = false
+            }
         )
     }
     

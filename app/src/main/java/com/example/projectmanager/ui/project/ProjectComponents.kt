@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -66,20 +67,23 @@ fun ProjectDetailsTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = Color.White,
+            titleContentColor = MaterialTheme.colorScheme.primary
         )
     )
 }
 
 // Project header with summary info
 @Composable
-fun ProjectHeader(project: Project) {
+fun ProjectHeader(
+    project: Project,
+    taskStats: TaskStats = TaskStats()
+) {
     val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     val isOverdue = project.deadline?.let { it.time < System.currentTimeMillis() } ?: false
-    val progressPercentage = if (project.totalTasks > 0) {
-        (project.completedTasks.toFloat() / project.totalTasks.toFloat()) * 100f
-    } else 0f
+    
+    // Use the taskStats for progress calculation (excluding canceled tasks)
+    val progressPercentage = taskStats.completedPercentage
     
     Card(
         modifier = Modifier
@@ -163,7 +167,7 @@ fun ProjectHeader(project: Project) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "${project.completedTasks}/${project.totalTasks} tasks (${progressPercentage.toInt()}%)",
+                        text = "${taskStats.completed}/${taskStats.active} active tasks (${progressPercentage.toInt()}%)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -171,16 +175,39 @@ fun ProjectHeader(project: Project) {
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                LinearProgressIndicator(
-                    progress = { progressPercentage / 100f },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = when {
-                        progressPercentage >= 100f -> MaterialTheme.colorScheme.secondary
-                        progressPercentage >= 75f -> MaterialTheme.colorScheme.primary
-                        progressPercentage >= 25f -> MaterialTheme.colorScheme.tertiary
-                        else -> MaterialTheme.colorScheme.error
-                    }
-                )
+                // Outlined green progress bar with rounded corners
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .border(
+                            width = 1.dp,
+                            color = Color(0xFF4CAF50), // Material Green
+                            shape = RoundedCornerShape(6.dp)
+                        )
+                        .background(Color(0xFFEEEEEE)) // Light gray background
+                        .padding(1.dp) // Padding to ensure progress doesn't overlap border
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progressPercentage / 100f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(Color(0xFF4CAF50)) // Material Green
+                    )
+                }
+                
+                // Add a small note about canceled tasks if there are any
+                if (taskStats.total > taskStats.active) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${taskStats.total - taskStats.active} canceled tasks excluded",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.align(Alignment.End)
+                    )
+                }
             }
         }
     }

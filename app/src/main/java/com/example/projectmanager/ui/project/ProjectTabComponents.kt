@@ -27,7 +27,11 @@ import java.util.*
 
 // Overview tab showing project summary
 @Composable
-fun ProjectOverviewTab(project: Project) {
+fun ProjectOverviewTab(
+    project: Project,
+    isCurrentUserManager: Boolean = false,
+    onEditMetrics: () -> Unit = {}
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -42,11 +46,27 @@ fun ProjectOverviewTab(project: Project) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Text(
-                        text = "Project Metrics",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Project Metrics",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        if (isCurrentUserManager) {
+                            IconButton(onClick = onEditMetrics) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Metrics",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
@@ -155,7 +175,7 @@ fun ProjectOverviewTab(project: Project) {
             }
         }
         
-        // Milestones
+        // Project description
         item {
             Card(
                 modifier = Modifier.fillMaxWidth()
@@ -164,30 +184,18 @@ fun ProjectOverviewTab(project: Project) {
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "Milestones",
+                        text = "Description",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    if (project.milestones.isEmpty()) {
-                        Text(
-                            text = "No milestones defined for this project",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            project.milestones.forEach { milestone ->
-                                MilestoneItem(milestone = milestone)
-                            }
-                        }
-                    }
+                    Text(
+                        text = project.description.ifEmpty { "No description provided" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (project.description.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }
@@ -198,7 +206,9 @@ fun ProjectOverviewTab(project: Project) {
 @Composable
 fun ProjectTasksTabComponent(
     tasks: List<Task>,
-    onTaskClick: (String) -> Unit
+    onTaskClick: (String) -> Unit,
+    isCurrentUserManager: Boolean = false,
+    onAiAssignTasks: () -> Unit = {}
 ) {
     // Add debug logging
     LaunchedEffect(tasks) {
@@ -213,46 +223,76 @@ fun ProjectTasksTabComponent(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Filter chips
+        // Header with filter chips and AI assignment button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            FilterChip(
-                selected = filterStatus == null,
-                onClick = { filterStatus = null },
-                label = { Text("All") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.List,
-                        contentDescription = null
-                    )
-                }
-            )
-            
-            TaskStatus.values().forEach { status ->
+            // Filter chips
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 FilterChip(
-                    selected = filterStatus == status,
-                    onClick = { filterStatus = status },
-                    label = { Text(status.name.replace('_', ' ')) },
+                    selected = filterStatus == null,
+                    onClick = { filterStatus = null },
+                    label = { Text("All") },
                     leadingIcon = {
-                        val icon = when(status) {
-                            TaskStatus.TODO -> Icons.Filled.Assignment
-                            TaskStatus.IN_PROGRESS -> Icons.Filled.PlayArrow
-                            TaskStatus.REVIEW -> Icons.Filled.RateReview
-                            TaskStatus.COMPLETED -> Icons.Filled.Done
-                            TaskStatus.BLOCKED -> Icons.Filled.Block
-                            TaskStatus.CANCELLED -> Icons.Filled.Close
-                        }
                         Icon(
-                            imageVector = icon,
+                            imageVector = Icons.Filled.List,
                             contentDescription = null
                         )
                     }
                 )
+                
+                TaskStatus.values().forEach { status ->
+                    FilterChip(
+                        selected = filterStatus == status,
+                        onClick = { filterStatus = status },
+                        label = { Text(status.name.replace('_', ' ').capitalize()) },
+                        leadingIcon = {
+                            val icon = when(status) {
+                                TaskStatus.TODO -> Icons.Filled.Assignment
+                                TaskStatus.IN_PROGRESS -> Icons.Filled.PlayArrow
+                                TaskStatus.REVIEW -> Icons.Filled.RateReview
+                                TaskStatus.COMPLETED -> Icons.Filled.Done
+                                TaskStatus.BLOCKED -> Icons.Filled.Block
+                                TaskStatus.CANCELLED -> Icons.Filled.Close
+                            }
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                }
+            }
+            
+            // AI Task Assignment button (only visible for project managers when there are tasks)
+            if (isCurrentUserManager && tasks.isNotEmpty()) {
+                Button(
+                    onClick = onAiAssignTasks,
+                    modifier = Modifier.padding(start = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("AI Assign Tasks")
+                    }
+                }
             }
         }
         

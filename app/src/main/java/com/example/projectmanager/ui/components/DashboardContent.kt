@@ -33,44 +33,38 @@ fun DashboardContent(
 
     // Get the context for toast messages
     val context = LocalContext.current
-    
+
     // Create a simple AppNavigator implementation for the DashboardScreen
-    val appNavigator = object : com.example.projectmanager.navigation.AppNavigator {
-        override fun navigateBack() {}
-        override fun navigateToSignIn() {}
-        override fun navigateToSignUp() {}
-        override fun navigateToForgotPassword() {}
-        override fun navigateToHome() {}
-        override fun navigateToProjects() {}
-        override fun navigateToProject(projectId: String) { onProjectClick(projectId) }
-        override fun navigateToTasks() {}
-        override fun navigateToTask(taskId: String) { onTaskClick(taskId) }
-        override fun navigateToProfile() {}
-        override fun navigateToSettings() {}
-        override fun navigateToCreateProject() {}
-        override fun navigateToCreateTask(projectId: String?) {}
-        override fun navigateToEditProject(projectId: String) {}
-        override fun navigateToEditTask(taskId: String) {}
-        override fun navigateToAnalyticsDashboard() {
-            // Call the navigation callback to go to the Analytics Dashboard
-            onNavigateToAnalytics()
+    val appNavigator = remember {
+        object : com.example.projectmanager.navigation.AppNavigator {
+            override fun navigateBack() {}
+            override fun navigateToSignIn() {}
+            override fun navigateToSignUp() {}
+            override fun navigateToForgotPassword() {}
+            override fun navigateToHome() {}
+            override fun navigateToProjects() {}
+            override fun navigateToProject(projectId: String) { onProjectClick(projectId) }
+            override fun navigateToTasks() {}
+            override fun navigateToTask(taskId: String) { onTaskClick(taskId) }
+            override fun navigateToProfile() {}
+            override fun navigateToSettings() {}
+            override fun navigateToCreateProject() {}
+            override fun navigateToCreateTask(projectId: String?) {}
+            override fun navigateToEditProject(projectId: String) {}
+            override fun navigateToEditTask(taskId: String) {}
+            override fun navigateToAnalyticsDashboard() {
+                // Call the navigation callback to go to the Analytics Dashboard
+                onNavigateToAnalytics()
+            }
+            override fun isUserSignedIn(): Boolean = true
         }
-        override fun isUserSignedIn(): Boolean = true
-        
-        // Chat navigation methods
-        override fun navigateToChats() {}
-        override fun navigateToChat(chatId: String) {}
-        override fun navigateToNewChat(projectId: String?) {}
-        override fun navigateToChatSettings(chatId: String) {}
     }
 
-    // Use our enhanced DashboardScreen with proper padding
-    Box(modifier = modifier) {
-        com.example.projectmanager.ui.dashboard.DashboardScreen(
-            viewModel = dashboardViewModel,
-            appNavigator = appNavigator
-        )
-    }
+    // Use our enhanced DashboardScreen
+    com.example.projectmanager.ui.dashboard.DashboardScreen(
+        viewModel = dashboardViewModel,
+        appNavigator = appNavigator
+    )
 }
 
 @Composable

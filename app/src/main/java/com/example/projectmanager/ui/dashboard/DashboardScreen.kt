@@ -6,16 +6,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.projectmanager.data.model.Project
@@ -32,7 +37,7 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedStatus by remember { mutableStateOf<String?>(null) }
-    
+
     // Filter projects based on selected status
     val filteredProjects = if (selectedStatus != null) {
         uiState.projectsByStatus[selectedStatus] ?: emptyList()
@@ -43,67 +48,61 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Dashboard") },
-                actions = {
-                    // Analytics Dashboard button
-                    IconButton(onClick = { appNavigator?.navigateToAnalyticsDashboard() }) {
-                        Icon(Icons.Default.BarChart, contentDescription = "Analytics Dashboard")
-                    }
-                    // Profile button
-                    IconButton(onClick = { appNavigator?.navigateToProfile() }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
-                    }
-                    // Settings button
-                    IconButton(onClick = { appNavigator?.navigateToSettings() }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
-                }
+                title = {
+                    Text(
+                        "Dashboard",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                )
             )
-        }
+        },
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp)
+                .padding(paddingValues),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
         ) {
             item {
                 WelcomeSection(userName = uiState.userName)
             }
-            
+
             item {
                 StatisticsSection(
                     totalProjects = uiState.totalProjects,
                     completedProjects = uiState.completedProjects,
-                    pendingTasks = uiState.pendingTasks
+                    pendingTasks = uiState.pendingTasks,
+                    completedTasks = uiState.completedTasks.size
                 )
             }
-            
-            // No longer need the Analytics Dashboard Button here since it's in the TopAppBar
+
+            // Analytics Dashboard Button
             item {
                 Spacer(modifier = Modifier.height(8.dp))
+                AnalyticsDashboardButton(onClick = {
+                    appNavigator?.navigateToAnalyticsDashboard()
+                })
             }
-            
+
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Projects",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    // View all projects button
-                    TextButton(onClick = { appNavigator?.navigateToProjects() }) {
-                        Text("View All")
-                    }
-                }
+                Spacer(modifier = Modifier.height(8.dp))
+                SectionHeader(
+                    title = "Projects",
+                    actionText = "View All",
+                    onActionClick = { appNavigator?.navigateToProjects() }
+                )
             }
-            
+
             // Project status filter chips
             item {
                 ProjectStatusFilter(
@@ -115,7 +114,7 @@ fun DashboardScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
-            
+
             // Show filtered projects or message if none
             if (filteredProjects.isEmpty()) {
                 item {
@@ -123,38 +122,35 @@ fun DashboardScreen(
                 }
             } else {
                 items(filteredProjects) { project ->
-                    ProjectCard(project = project)
+                    ProjectCard(
+                        project = project,
+                        onClick = { appNavigator?.navigateToProject(project.id) }
+                    )
                 }
             }
-            
+
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Upcoming Tasks",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
                 Spacer(modifier = Modifier.height(8.dp))
+                SectionHeader(
+                    title = "Upcoming Tasks",
+                    actionText = if (uiState.upcomingTasks.isNotEmpty()) "View All" else null,
+                    onActionClick = { appNavigator?.navigateToTasks() }
+                )
             }
-            
+
             if (uiState.upcomingTasks.isEmpty()) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No upcoming tasks",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
+                    EmptyStateMessage(
+                        icon = Icons.Outlined.AssignmentLate,
+                        message = "No upcoming tasks"
+                    )
                 }
             } else {
                 items(uiState.upcomingTasks) { task ->
-                    TaskCard(task = task)
+                    TaskCard(
+                        task = task,
+                        onClick = { appNavigator?.navigateToTask(task.id) }
+                    )
                 }
             }
         }
@@ -163,28 +159,22 @@ fun DashboardScreen(
 
 @Composable
 fun WelcomeSection(userName: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        shape = RoundedCornerShape(8.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Welcome back,",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Text(
-                text = userName,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
+        Text(
+            text = "Welcome back,",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = userName,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
     }
 }
 
@@ -192,31 +182,33 @@ fun WelcomeSection(userName: String) {
 fun StatisticsSection(
     totalProjects: Int,
     completedProjects: Int,
-    pendingTasks: Int
+    pendingTasks: Int,
+    completedTasks: Int = 0
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         StatCard(
-            title = "Total Projects",
+            title = "My Projects",
             value = totalProjects.toString(),
-            icon = Icons.Default.Folder,
-            modifier = Modifier.weight(1f)
+            icon = Icons.Outlined.Folder,
+            modifier = Modifier.weight(1f),
+            iconTint = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.width(8.dp))
         StatCard(
-            title = "Completed",
-            value = completedProjects.toString(),
-            icon = Icons.Default.CheckCircle,
-            modifier = Modifier.weight(1f)
+            title = "Completed Tasks",
+            value = completedTasks.toString(),
+            icon = Icons.Outlined.CheckCircle,
+            modifier = Modifier.weight(1f),
+            iconTint = MaterialTheme.colorScheme.tertiary
         )
-        Spacer(modifier = Modifier.width(8.dp))
         StatCard(
             title = "Pending Tasks",
             value = pendingTasks.toString(),
-            icon = Icons.Default.Assignment,
-            modifier = Modifier.weight(1f)
+            icon = Icons.Outlined.Assignment,
+            modifier = Modifier.weight(1f),
+            iconTint = MaterialTheme.colorScheme.secondary
         )
     }
 }
@@ -227,26 +219,40 @@ fun StatCard(
     title: String,
     value: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    iconTint: Color = MaterialTheme.colorScheme.primary
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.height(160.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(iconTint.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineSmall,
@@ -254,7 +260,8 @@ fun StatCard(
             )
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -262,9 +269,15 @@ fun StatCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectCard(project: Project) {
+fun ProjectCard(
+    project: Project,
+    onClick: () -> Unit
+) {
     Card(
-        onClick = { /* Navigate to project details */ }
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -272,26 +285,49 @@ fun ProjectCard(project: Project) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Folder,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
+            // Project icon with colored background
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(GradientStart, GradientEnd)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Folder,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = project.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = "${project.completedTasks}/${project.totalTasks} tasks completed",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Empty space where the task count used to be
+                Spacer(modifier = Modifier.height(4.dp))
             }
-            LinearProgressIndicator(
-                progress = project.completedTasks.toFloat() / project.totalTasks.toFloat(),
-                modifier = Modifier.width(60.dp)
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "View Project",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
     }
@@ -299,9 +335,15 @@ fun ProjectCard(project: Project) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskCard(task: Task) {
+fun TaskCard(
+    task: Task,
+    onClick: () -> Unit
+) {
     Card(
-        onClick = { /* Navigate to task details */ }
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -309,27 +351,67 @@ fun TaskCard(task: Task) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Checkbox(
-                checked = task.isCompleted,
-                onCheckedChange = null
-            )
+            // Custom checkbox with colored background when checked
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (task.isCompleted) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (task.isCompleted) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Completed",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = task.title,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = if (task.isCompleted) FontWeight.Normal else FontWeight.Medium,
+                    color = if (task.isCompleted)
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = "Due ${task.dueDate}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (task.isOverdue) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (task.isOverdue) Icons.Outlined.Warning else Icons.Outlined.CalendarToday,
+                        contentDescription = null,
+                        tint = if (task.isOverdue) MaterialTheme.colorScheme.error
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = if (task.dueDate != null) "Due ${task.dueDate}" else "No due date",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (task.isOverdue) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
+
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                contentDescription = "View Task",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
     }
@@ -343,7 +425,8 @@ fun ProjectStatusFilter(
     onStatusSelected: (String) -> Unit
 ) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 8.dp)
     ) {
         items(statusCounts.entries.toList()) { (status, count) ->
             FilterChip(
@@ -358,7 +441,12 @@ fun ProjectStatusFilter(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                } else null
+                } else null,
+                shape = RoundedCornerShape(16.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         }
     }
@@ -366,6 +454,17 @@ fun ProjectStatusFilter(
 
 @Composable
 fun EmptyProjectsMessage(statusFilter: String?) {
+    EmptyStateMessage(
+        icon = Icons.Outlined.FolderOff,
+        message = if (statusFilter != null) "No $statusFilter projects found" else "No projects found"
+    )
+}
+
+@Composable
+fun EmptyStateMessage(
+    icon: ImageVector,
+    message: String
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -373,18 +472,55 @@ fun EmptyProjectsMessage(statusFilter: String?) {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Default.FolderOff,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = if (statusFilter != null) "No $statusFilter projects found" else "No projects found",
+                text = message,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
+        }
+    }
+}
+
+@Composable
+fun SectionHeader(
+    title: String,
+    actionText: String? = null,
+    onActionClick: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        if (actionText != null && onActionClick != null) {
+            TextButton(onClick = onActionClick) {
+                Text(
+                    text = actionText,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
@@ -396,8 +532,10 @@ fun AnalyticsDashboardButton(onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier
@@ -407,31 +545,57 @@ fun AnalyticsDashboardButton(onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.BarChart,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                // Gradient background for the icon
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(GradientStart, GradientEnd)
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BarChart,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
                 Spacer(modifier = Modifier.width(16.dp))
+
                 Column {
                     Text(
                         text = "Analytics Dashboard",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "View detailed project analytics",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            Icon(
-                imageVector = Icons.Default.ArrowForward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
-} 
+}

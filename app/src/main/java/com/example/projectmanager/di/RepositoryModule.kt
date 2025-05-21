@@ -49,6 +49,12 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindSkillRepository(
+        skillRepositoryImpl: SkillRepositoryImpl
+    ): SkillRepository
+
+    @Binds
+    @Singleton
     abstract fun bindChatRepository(
         firebaseChatRepository: FirebaseChatRepository
     ): ChatRepository

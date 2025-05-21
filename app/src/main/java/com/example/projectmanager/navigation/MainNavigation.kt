@@ -14,10 +14,6 @@ import com.example.projectmanager.ui.tasks.TasksScreen
 import com.example.projectmanager.ui.profile.ProfileScreen
 import com.example.projectmanager.ui.settings.SettingsScreen
 import com.example.projectmanager.ui.dashboard.AnalyticsDashboardScreen
-import com.example.projectmanager.ui.chat.ChatListScreen
-import com.example.projectmanager.ui.chat.ChatScreen
-import com.example.projectmanager.ui.chat.NewChatScreen
-import com.example.projectmanager.ui.chat.ChatSettingsScreen
 import com.example.projectmanager.navigation.AppNavigatorImpl.Companion as Routes
 
 @Composable
@@ -149,80 +145,12 @@ fun MainNavigation(
             // TODO: Implement EditTaskScreen
             val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
         }
-        
+
         // Analytics Dashboard
         composable(Routes.ANALYTICS_DASHBOARD_ROUTE) {
             AnalyticsDashboardScreen(
                 onNavigateBack = {
                     navController.navigateUp()
-                }
-            )
-        }
-        
-        // Chat Routes
-        composable(Routes.CHATS_ROUTE) {
-            ChatListScreen(
-                onNavigateToChat = { chatId ->
-                    navController.navigate("${Routes.CHAT_DETAIL_ROUTE}/$chatId")
-                },
-                onNavigateToNewChat = {
-                    navController.navigate(Routes.NEW_CHAT_ROUTE)
-                }
-            )
-        }
-        
-        composable(
-            route = "${Routes.CHAT_DETAIL_ROUTE}/{chatId}",
-            arguments = listOf(
-                navArgument("chatId") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            ChatScreen(
-                chatId = backStackEntry.arguments?.getString("chatId") ?: "",
-                onNavigateBack = {
-                    navController.navigateUp()
-                }
-            )
-        }
-        
-        composable(
-            route = "${Routes.NEW_CHAT_ROUTE}?projectId={projectId}",
-            arguments = listOf(
-                navArgument("projectId") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) { backStackEntry ->
-            NewChatScreen(
-                projectId = backStackEntry.arguments?.getString("projectId"),
-                onNavigateBack = {
-                    navController.navigateUp()
-                },
-                onNavigateToChat = { chatId ->
-                    navController.navigate("${Routes.CHAT_DETAIL_ROUTE}/$chatId") {
-                        popUpTo(Routes.NEW_CHAT_ROUTE) { inclusive = true }
-                    }
-                }
-            )
-        }
-        
-        composable(
-            route = "${Routes.CHAT_SETTINGS_ROUTE}/{chatId}",
-            arguments = listOf(
-                navArgument("chatId") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            ChatSettingsScreen(
-                chatId = backStackEntry.arguments?.getString("chatId") ?: "",
-                onNavigateBack = {
-                    navController.navigateUp()
-                },
-                onDeleteChat = {
-                    navController.navigate(Routes.CHATS_ROUTE) {
-                        popUpTo(Routes.CHATS_ROUTE) { inclusive = true }
-                    }
                 }
             )
         }
