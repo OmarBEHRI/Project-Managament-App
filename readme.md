@@ -1,134 +1,120 @@
-# Collaborative Project Management Android Application
+# Application Android de Gestion Collaborative de Projets
 
-## Overview
-This Android application is designed to facilitate collaborative project management for teams of all sizes. Built with modern Android development practices, it offers a comprehensive suite of tools for project planning, task management, team communication, and progress tracking.
+## Présentation
+Cette application Android vise à faciliter la gestion collaborative de projets pour des équipes de toutes tailles. Conçue avec des pratiques modernes de développement, elle offre une suite complète d’outils pour la planification, la gestion des tâches, la communication d’équipe et le suivi de la progression.
 
-## Current State of Development
-The application is currently in active development with the following components implemented:
+## État actuel du développement
+L’application est actuellement en développement actif avec les composants suivants déjà implémentés :
 
-### Core Architecture
-- **Language**: Kotlin
-- **UI Framework**: Jetpack Compose
-- **Architecture Pattern**: MVVM (Model-View-ViewModel)
-- **Backend Services**: Firebase (Authentication, Firestore, Storage, Cloud Messaging)
-- **Dependency Injection**: Hilt
-- **Navigation**: Jetpack Navigation Component
+### Architecture principale
+- **Langage** : Kotlin
+- **UI** : Jetpack Compose
+- **Architecture** : MVVM (Modèle-Vue-VueModèle)
+- **Services backend** : Firebase (Authentication, Firestore, Storage, Cloud Messaging)
+- **Injection de dépendances** : Hilt
+- **Navigation** : Jetpack Navigation Component
 
-### Implemented Features
+### Fonctionnalités implémentées
 
-#### Authentication & User Management
-- User registration and login with email/password
-- Google Sign-In integration
-- User profile management
-- Role-based access control (Admin, Project Manager, Team Member)
-- User preferences and settings
+#### Authentification & Gestion des utilisateurs
+- Inscription et connexion par e-mail/mot de passe
+- Intégration de Google Sign-In
+- Gestion du profil utilisateur
+- Contrôle d’accès basé sur les rôles (Admin, Chef de projet, Membre)
+- Préférences et paramètres utilisateurs
 
-#### Project Management
-- Project creation, editing, and deletion
-- Project dashboard with key metrics
-- Project status tracking
-- Project settings and configuration
-- Team member management within projects
+#### Gestion de projets
+- Création, modification et suppression de projets
+- Tableau de bord avec indicateurs clés
+- Suivi de l’état d’avancement des projets
+- Paramètres de configuration des projets
+- Gestion des membres associés à un projet
 
-#### Task Management
-- Task creation and assignment
-- Task dependencies and hierarchical organization (subtasks)
-- Task status tracking
-- Deadline management
-- Priority levels
-- Intelligent task assignment based on skills and workload
-- Time tracking for tasks
-
-#### Milestone Management
-- Milestone creation and tracking
-- Association of tasks with milestones
-- Automatic milestone completion based on task status
-- Milestone deadline notifications
+#### Gestion des tâches
+- Création et affectation des tâches
+- Dépendances et hiérarchisation (sous-tâches)
+- Suivi de l’état d’avancement des tâches
+- Gestion des délais
+- Niveaux de priorité
+- Attribution intelligente basée sur les compétences et la charge
+- Suivi du temps de réalisation des tâches
 
 #### Communication
-- Real-time chat functionality
-- Task-specific comments and discussions
-- @mentions for user notifications
-- File sharing in conversations
-- Notification system for important events
+- Système de chat en temps réel
+- Commentaires liés aux tâches
+- Mentions (@) pour notifier un utilisateur
+- Partage de fichiers dans les conversations
+- Notifications pour les événements importants
 
-#### File Management
-- File upload and attachment to projects and tasks
-- File sharing with team members
-- File preview for common formats
-- Version history for documents
+#### Gestion de fichiers
+- Téléversement de fichiers liés aux projets et aux tâches
+- Partage de fichiers avec les membres de l’équipe
+- Aperçu des fichiers standards
+- Historique des versions de documents
 
-#### Offline Capabilities
-- Offline data access
-- Background synchronization when connection is restored
-- Conflict resolution for concurrent edits
+### Modèles de données
+L’application utilise les modèles principaux suivants :
 
-### Data Models
-The application uses the following primary data models:
+- **Utilisateur** : Informations, préférences et identifiants
+- **Projet** : Détails, membres, paramètres, statistiques
+- **Tâche** : Éléments de travail avec statut, affectation, dépendances
+- **Commentaire** : Discussions liées aux projets/tâches
+- **Message** : Communication en temps réel
+- **Fichier** : Pièces jointes et métadonnées
+- **Temps** : Enregistrements de temps de travail
 
-- **User**: Stores user information, preferences, and authentication details
-- **Project**: Contains project details, members, settings, and metrics
-- **Task**: Represents work items with assignments, status, and relationships
-- **Milestone**: Marks significant project phases or deliverables
-- **Comment**: Enables discussions on projects and tasks
-- **Message**: Facilitates real-time communication
-- **FileAttachment**: Manages uploaded files and their metadata
-- **TimeEntry**: Tracks time spent on tasks
+### Composants UI
+- Implémentation Material Design 3 avec Jetpack Compose
+- Interfaces responsives pour tous types d’écrans
+- Composants personnalisés pour la gestion de projets
+- Graphiques et visualisations interactives
 
-### UI Components
-- Modern Material Design 3 implementation with Jetpack Compose
-- Dark/light theme support
-- Responsive layouts for different screen sizes
-- Custom composables for specialized project management views
-- Interactive charts and graphs for data visualization
+### Intégration d'IA
+- Recommandations intelligentes de tâches via IA
+  
+## Détails techniques
 
-## Project Structure
+### Intégration Firebase
+- **Authentication** : Connexion sécurisée multi-fournisseur
+- **Firestore** : Base NoSQL en temps réel
+- **Storage** : Stockage des fichiers et avatars utilisateurs
+- **Cloud Messaging** : Notifications push pour alertes en direct
 
-## Technical Details
+### Bibliothèques Jetpack utilisées
+- **Compose** : Interface déclarative moderne
+- **ViewModel** : Gestion des états de l’UI
+- **LiveData / Flow** : Modèles de données observables
+- **Room** : Abstraction de SQLite pour cache local
+- **WorkManager** : Exécution de tâches en arrière-plan
+- **Navigation** : Gestion de la navigation dans l’app
 
-### Firebase Integration
-- **Authentication**: Secure user authentication with multiple providers
-- **Firestore**: NoSQL database for storing application data with real-time updates
-- **Storage**: File storage for attachments and user avatars
-- **Cloud Messaging**: Push notifications for real-time alerts
+### Bibliothèques tierces
+- **Retrofit** : Client HTTP pour API REST
+- **Coil** : Chargement et mise en cache d’images
+- **Timber** : Outils de logs
+- **Vico** : Visualisation de données (graphiques)
+- **KotlinX DateTime** : Gestion des dates et heures
 
-### Jetpack Libraries
-- **Compose**: Declarative UI toolkit
-- **ViewModel**: UI state management
-- **LiveData/Flow**: Observable data holder patterns
-- **Room**: SQLite abstraction for local caching
-- **WorkManager**: Background task scheduling
-- **Navigation**: In-app navigation management
+## Installation et configuration
 
-### Third-Party Libraries
-- **Retrofit**: HTTP client for REST API calls
-- **Coil**: Image loading and caching
-- **Timber**: Logging utility
-- **Vico**: Charts and data visualization
-- **KotlinX DateTime**: Date and time handling
+### Prérequis
+- Android Studio Arctic Fox (2020.3.1) ou version supérieure
+- JDK 11 ou plus récent
+- Android SDK 31 (Android 12) ou plus
+- Compte Firebase configuré
 
-## Setup and Installation
+### Étapes d’installation
+1. Cloner le dépôt du projet
+2. Créer un projet Firebase et le configurer pour Android
+3. Télécharger le fichier `google-services.json` et le placer dans le dossier `app`
+4. Configurer Firebase Authentication, Firestore et Storage via la console Firebase
+5. Compiler et exécuter l’application depuis Android Studio
 
-### Prerequisites
-- Android Studio Arctic Fox (2020.3.1) or newer
-- JDK 11 or newer
-- Android SDK 31 (Android 12) or newer
-- Firebase account for backend services
+## Évolutions futures
+- Développement de la version iOS
+- Outils d’analyse et de reporting avancés
+- Intégration avec des services tiers (Jira, GitHub, Slack)
+- Amélioration des fonctionnalités hors-ligne
+- Gestion étendue des fichiers et historique
 
-### Configuration
-1. Clone the repository
-2. Create a Firebase project and configure it for Android
-3. Download the `google-services.json` file and place it in the app directory
-4. Configure Firebase Authentication, Firestore, and Storage in the Firebase console
-5. Build and run the application using Android Studio
 
-## Future Development Plans
-- iOS version development
-- Advanced analytics and reporting
-- AI-powered task recommendations
-- Integration with additional third-party services (Jira, GitHub, Slack)
-- Enhanced offline capabilities
-- Expanded file management features
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
