@@ -41,13 +41,54 @@ class TaskRepositoryImpl @Inject constructor(
         emit(Resource.loading())
         try {
             val document = tasksCollection.document(taskId).get().await()
-            val task = document.toObject(Task::class.java)
-            if (task != null) {
-                emit(Resource.success(task))
+            
+            // Instead of using toObject which is causing issues with PropertyName annotations,
+            // manually map the document to a Task object
+            if (document.exists()) {
+                try {
+                    val task = Task(
+                        id = document.id,
+                        title = document.getString("title") ?: "",
+                        description = document.getString("description") ?: "",
+                        richDescription = null, // Will implement if needed
+                        projectId = document.getString("project_id") ?: "",
+                        parentTaskId = document.getString("parent_task_id"),
+                        subtasks = emptyList(), // Will be populated separately
+                        assignedTo = (document.get("assigned_to") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        createdBy = document.getString("created_by") ?: "",
+                        status = document.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.TODO,
+                        priority = document.getString("priority")?.let { TaskPriority.valueOf(it) } ?: TaskPriority.MEDIUM,
+                        startDate = document.getDate("start_date"),
+                        dueDate = document.getDate("due_date"),
+                        createdAt = document.getDate("createdAt"),
+                        updatedAt = document.getDate("updatedAt"),
+                        tags = (document.get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        isCompleted = document.getBoolean("completed") ?: false,
+                        completedAt = document.getDate("completed_at"),
+                        isOverdue = document.getBoolean("overdue") ?: false,
+                        estimatedHours = document.getDouble("estimated_hours")?.toFloat(),
+                        actualHours = document.getDouble("actual_hours")?.toFloat(),
+                        milestoneId = document.getString("milestone_id"),
+                        order = document.getLong("order")?.toInt() ?: 0,
+                        watchers = (document.get("watchers") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                    )
+                    
+                    // Log the task details for debugging
+                    println("Retrieved task ${task.id} with title: ${task.title}")
+                    println("Due date: ${task.dueDate}, Status: ${task.status}, Priority: ${task.priority}")
+                    
+                    emit(Resource.success(task))
+                } catch (e: Exception) {
+                    println("Error mapping task document ${document.id}: ${e.message}")
+                    e.printStackTrace()
+                    emit(Resource.error("Error parsing task data: ${e.message}"))
+                }
             } else {
                 emit(Resource.error("Task not found"))
             }
         } catch (e: Exception) {
+            println("Error fetching task: ${e.message}")
+            e.printStackTrace()
             emit(Resource.error(e.message ?: "Failed to get task"))
         }
     }
