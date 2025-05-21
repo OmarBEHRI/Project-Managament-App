@@ -21,8 +21,8 @@ class FirebaseChatRepository @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : ChatRepository {
 
-    private val chatsCollection = firestore.collection("chats")
-    private val messagesCollection = firestore.collection("messages")
+    private val chatsCollection = firestore.collection("chat_chats")
+    private val messagesCollection = firestore.collection("chat_messages")
 
     override fun getChats(userId: String): Flow<Resource<List<Chat>>> = callbackFlow {
         trySend(Resource.Loading)
@@ -65,9 +65,12 @@ class FirebaseChatRepository @Inject constructor(
     override fun getChatMessages(chatId: String): Flow<Resource<List<Message>>> = callbackFlow {
         trySend(Resource.Loading)
 
+        // Utiliser un limit plus élevé pour s'assurer de récupérer tous les messages
+        // La limite par défaut de Firestore est de 1000, ce qui devrait être suffisant pour la plupart des conversations
         val listener = messagesCollection
             .whereEqualTo("chat_id", chatId)
             .orderBy("sent_at", Query.Direction.ASCENDING)
+            .limit(1000)  // Limite explicite pour s'assurer d'avoir tous les messages
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(Resource.Error(error.message ?: "Failed to load messages"))
@@ -75,10 +78,26 @@ class FirebaseChatRepository @Inject constructor(
                 }
 
                 val messages = snapshot?.documents?.mapNotNull { it.toObject<Message>() } ?: emptyList()
+                println("DEBUG: Loaded ${messages.size} messages for chat $chatId")
                 trySend(Resource.Success(messages))
             }
 
         awaitClose { listener.remove() }
+    }
+
+    override suspend fun getAllChatMessagesHistory(chatId: String): Resource<List<Message>> {
+        return try {
+            val snapshot = messagesCollection
+                .whereEqualTo("chat_id", chatId)
+                .orderBy("sent_at", Query.Direction.ASCENDING)
+                .get()
+                .await()
+                
+            val messages = snapshot.documents.mapNotNull { it.toObject<Message>() }
+            Resource.Success(messages)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to load message history")
+        }
     }
 
     override suspend fun getChat(chatId: String): Resource<Chat> {

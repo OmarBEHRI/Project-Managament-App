@@ -7,6 +7,7 @@ import com.example.projectmanager.data.model.*
 import com.example.projectmanager.data.repository.ChatRepository
 import com.example.projectmanager.data.repository.UserRepository
 import com.example.projectmanager.data.service.StorageService
+import com.example.projectmanager.service.ChatMessageListener
 import com.example.projectmanager.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -32,16 +33,72 @@ class ChatViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
+    // Variable pour stocker l'ID de l'utilisateur avec qui on veut créer une conversation
+    // Variable pour stocker l'ID de l'utilisateur avec qui on veut cru00e9er une conversation
+    private var pendingDirectChatUserId: String? = null
+    
     fun loadChat(chatId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-
-            // Load chat details
+            
+            // Vu00e9rifier si c'est une nouvelle conversation directe
+            if (chatId.startsWith("new_direct_")) {
+                // Extraire l'ID de l'utilisateur
+                val userId = chatId.removePrefix("new_direct_")
+                pendingDirectChatUserId = userId
+                
+                // Charger les informations de l'utilisateur pour afficher son nom
+                userRepository.getUserById(userId).collect { userResult ->
+                    when (userResult) {
+                        is Resource.Success<*> -> {
+                            val user = userResult.data as User
+                            // Cru00e9er un objet Chat temporaire pour l'affichage
+                            val tempChat = Chat(
+                                id = "temp_" + UUID.randomUUID().toString(),
+                                name = user.displayName,
+                                type = ChatType.DIRECT,
+                                participants = listOf(getCurrentUserId(), userId),
+                                unreadCount = mapOf(getCurrentUserId() to 0, userId to 0)
+                            )
+                            _uiState.update {
+                                it.copy(
+                                    chat = tempChat,
+                                    isLoading = false,
+                                    error = null
+                                )
+                            }
+                            
+                            // Mu00eame pour une conversation temporaire, nous devons initialiser la liste des messages
+                            // avec une liste vide pour que les nouveaux messages s'affichent correctement
+                            _uiState.update {
+                                it.copy(messages = emptyList())
+                            }
+                        }
+                        is Resource.Error -> {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = userResult.message
+                                )
+                            }
+                        }
+                        is Resource.Loading -> {
+                            _uiState.update {
+                                it.copy(isLoading = true)
+                            }
+                        }
+                    }
+                }
+                // Ne pas retourner ici, continuer pour charger les messages si disponibles
+            }
+            
+            // Chargement normal d'une conversation existante
             when (val chatResult = chatRepository.getChat(chatId)) {
-                is Resource.Success -> {
+                is Resource.Success<*> -> {
+                    val chat = chatResult.data as Chat
                     _uiState.update {
                         it.copy(
-                            chat = chatResult.data,
+                            chat = chat,
                             isLoading = false,
                             error = null
                         )
@@ -61,13 +118,22 @@ class ChatViewModel @Inject constructor(
             // Load messages
             chatRepository.getChatMessages(chatId).collect { result ->
                 when (result) {
-                    is Resource.Success -> {
+                    is Resource.Success<*> -> {
+                        val messages = result.data as List<Message>
                         _uiState.update {
                             it.copy(
-                                messages = result.data,
+                                messages = messages,
                                 isLoading = false,
                                 error = null
                             )
+                        }
+                        
+                        // Mark unread messages as read
+                        val currentUserId = getCurrentUserId()
+                        messages.forEach { message ->
+                            if (message.senderId != currentUserId && !message.readBy.contains(currentUserId)) {
+                                markMessageAsRead(message.id)
+                            }
                         }
                     }
                     is Resource.Error -> {
@@ -87,6 +153,30 @@ class ChatViewModel @Inject constructor(
             }
         }
     }
+    
+    override fun onCleared() {
+        super.onCleared()
+        // Sauvegarder l'historique des messages lorsque le ViewModel est du00e9truit
+        saveMessageHistory()
+    }
+    
+    // Mu00e9thode pour sauvegarder l'historique des messages
+    private fun saveMessageHistory() {
+        val chat = uiState.value.chat ?: return
+        val chatId = chat.id
+        
+        // Ne pas sauvegarder les conversations temporaires
+        if (chatId.startsWith("temp_") || chatId.startsWith("new_direct_")) {
+            return
+        }
+        
+        // Sauvegarder les messages en mu00e9moire pour les restaurer si nu00e9cessaire
+        val messages = uiState.value.messages
+        if (messages.isNotEmpty()) {
+            println("DEBUG: Saving ${messages.size} messages for chat $chatId")
+            // On pourrait implémenter ici une sauvegarde locale si nu00e9cessaire
+        }
+    }
 
     fun updateMessageText(text: String) {
         _uiState.update { it.copy(messageText = text) }
@@ -97,23 +187,99 @@ class ChatViewModel @Inject constructor(
             val messageText = uiState.value.messageText.trim()
             if (messageText.isBlank() || uiState.value.chat == null) return@launch
 
-            val message = Message(
-                chatId = uiState.value.chat!!.id,
-                senderId = getCurrentUserId(),
-                content = messageText,
-                type = MessageType.TEXT,
-                status = MessageStatus.SENDING
-            )
-
-            _uiState.update { it.copy(messageText = "") }
-
-            when (val result = chatRepository.sendMessage(message)) {
-                is Resource.Error -> {
-                    _uiState.update {
-                        it.copy(error = result.message)
-                    }
+            // Get current user
+            val currentUserId = getCurrentUserId()
+            var senderName: String? = null
+            
+            // Get user's display name
+            when (val userResult = userRepository.getUserById(currentUserId)) {
+                is Resource.Success<*> -> {
+                    val user = userResult.data as User
+                    senderName = user.displayName
                 }
                 else -> {}
+            }
+            
+            // Vu00e9rifier si nous avons une conversation en attente u00e0 cru00e9er
+            if (pendingDirectChatUserId != null) {
+                // Cru00e9er la conversation
+                val newChat = Chat(
+                    type = ChatType.DIRECT,
+                    participants = listOf(currentUserId, pendingDirectChatUserId!!),
+                    unreadCount = mapOf(currentUserId to 0, pendingDirectChatUserId!! to 0)
+                )
+                
+                when (val createResult = chatRepository.createChat(newChat)) {
+                    is Resource.Success<*> -> {
+                        val chat = createResult.data as Chat
+                        _uiState.update { it.copy(chat = chat) }
+                        
+                        // Envoyer le message dans la nouvelle conversation
+                        // S'assurer que l'ID de l'expu00e9diteur est correctement du00e9fini
+                        val message = Message(
+                            chatId = chat.id,
+                            senderId = currentUserId,  // ID de l'utilisateur actuel
+                            senderName = senderName,    // Nom de l'utilisateur actuel
+                            content = messageText,
+                            type = MessageType.TEXT,
+                            status = MessageStatus.SENDING,
+                            readBy = listOf(currentUserId)  // Marquer comme lu par l'expu00e9diteur
+                        )
+                        
+                        // Afficher des informations de du00e9bogage
+                        println("DEBUG SEND: Creating message with senderId: $currentUserId")
+                        
+                        _uiState.update { it.copy(messageText = "") }
+                        
+                        // Ajouter le message u00e0 l'interface utilisateur immu00e9diatement
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                messages = currentState.messages + message
+                            )
+                        }
+                        
+                        // Envoyer le message u00e0 Firebase
+                        chatRepository.sendMessage(message)
+                        pendingDirectChatUserId = null  // Ru00e9initialiser l'ID de l'utilisateur en attente
+                    }
+                    is Resource.Error -> {
+                        _uiState.update { it.copy(error = createResult.message) }
+                    }
+                    else -> {}
+                }
+            } else {
+                // Conversation existante, envoyer le message normalement
+                // S'assurer que l'ID de l'expu00e9diteur est correctement du00e9fini
+                val message = Message(
+                    chatId = uiState.value.chat!!.id,
+                    senderId = currentUserId,  // ID de l'utilisateur actuel
+                    senderName = senderName,    // Nom de l'utilisateur actuel
+                    content = messageText,
+                    type = MessageType.TEXT,
+                    status = MessageStatus.SENDING,
+                    readBy = listOf(currentUserId)  // Marquer comme lu par l'expu00e9diteur
+                )
+                
+                // Afficher des informations de du00e9bogage
+                println("DEBUG SEND: Creating message with senderId: $currentUserId")
+
+                _uiState.update { it.copy(messageText = "") }
+                
+                // Ajouter le message u00e0 l'interface utilisateur immu00e9diatement
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        messages = currentState.messages + message
+                    )
+                }
+
+                when (val result = chatRepository.sendMessage(message)) {
+                    is Resource.Error -> {
+                        _uiState.update {
+                            it.copy(error = result.message)
+                        }
+                    }
+                    else -> {}
+                }
             }
         }
     }
@@ -123,6 +289,19 @@ class ChatViewModel @Inject constructor(
             uiState.value.chat?.let { chat ->
                 _uiState.update { it.copy(isLoading = true) }
 
+                // Get current user
+                val currentUserId = getCurrentUserId()
+                var senderName: String? = null
+                
+                // Get user's display name
+                when (val userResult = userRepository.getUserById(currentUserId)) {
+                    is Resource.Success<*> -> {
+                        val user = userResult.data as User
+                        senderName = user.displayName
+                    }
+                    else -> {}
+                }
+
                 // Upload file
                 storageService.uploadFile(
                     uri = uri,
@@ -131,11 +310,12 @@ class ChatViewModel @Inject constructor(
                     commentId = null
                 ).collect { result ->
                     when (result) {
-                        is Resource.Success -> {
-                            val attachment = result.data
+                        is Resource.Success<*> -> {
+                            val attachment = result.data as FileAttachment
                             val message = Message(
                                 chatId = chat.id,
-                                senderId = getCurrentUserId(),
+                                senderId = currentUserId,
+                                senderName = senderName,
                                 content = attachment.downloadUrl,
                                 type = if (attachment.mimeType.startsWith("image/")) {
                                     MessageType.IMAGE

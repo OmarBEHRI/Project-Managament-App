@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -85,7 +86,8 @@ fun ChatListScreen(
                             ChatItem(
                                 chat = chat,
                                 currentUserId = viewModel.getCurrentUserId(),
-                                onClick = { onNavigateToChat(chat.id) }
+                                onClick = { onNavigateToChat(chat.id) },
+                                getUserName = viewModel::getUserName
                             )
                         }
                     }
@@ -100,7 +102,8 @@ fun ChatListScreen(
 fun ChatItem(
     chat: Chat,
     currentUserId: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    getUserName: (String, (String) -> Unit) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -144,19 +147,80 @@ fun ChatItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
+                // Pour les conversations directes, afficher le nom de l'autre participant
+                var displayName by remember { mutableStateOf("Loading...") }
+                
+                if (chat.type == ChatType.DIRECT) {
+                    // Trouver l'ID de l'autre participant (pas l'utilisateur actuel)
+                    val otherUserId = chat.participants.find { it != currentUserId }
+                    
+                    if (otherUserId != null) {
+                        // Ru00e9cupu00e9rer le nom d'utilisateur u00e0 partir de son ID
+                        LaunchedEffect(otherUserId) {
+                            getUserName(otherUserId) { userName ->
+                                displayName = userName
+                            }
+                        }
+                    } else {
+                        displayName = chat.name ?: "Unknown User"
+                    }
+                } else {
+                    displayName = chat.name ?: "Unnamed Chat"
+                }
+                
                 Text(
-                    text = chat.name ?: "",
+                    text = displayName,
                     style = MaterialTheme.typography.titleMedium
                 )
 
+                // Afficher le dernier message avec le style appropriu00e9 selon l'expu00e9diteur
                 chat.lastMessage?.let { message ->
                     Spacer(modifier = Modifier.height(4.dp))
+                    
+                    val isFromCurrentUser = message.senderId == currentUserId
+                    val messagePrefix = if (isFromCurrentUser) {
+                        "You: "
+                    } else if (!message.senderName.isNullOrBlank()) {
+                        "${message.senderName}: "
+                    } else {
+                        ""
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = if (isFromCurrentUser) Arrangement.End else Arrangement.Start
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isFromCurrentUser) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            },
+                            modifier = Modifier.widthIn(max = 240.dp)
+                        ) {
+                            Text(
+                                text = messagePrefix + message.content,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isFromCurrentUser) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                } ?: run {
+                    // Si aucun message n'existe encore
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = message.content,
+                        text = "No messages yet",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        maxLines = 1
                     )
                 }
             }

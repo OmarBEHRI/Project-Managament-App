@@ -58,4 +58,10 @@ abstract class RepositoryModule {
     abstract fun bindProjectTemplateRepository(
         firebaseProjectTemplateRepository: FirebaseProjectTemplateRepository
     ): ProjectTemplateRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindUserPreferencesRepository(
+        firebaseUserPreferencesRepository: FirebaseUserPreferencesRepository
+    ): UserPreferencesRepository
 }

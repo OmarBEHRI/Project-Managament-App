@@ -115,9 +115,26 @@ fun ChatScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(uiState.messages) { message ->
+                            // Ajout d'un log pour du00e9boguer
+                            val currentUserId = viewModel.getCurrentUserId()
+                            
+                            // S'assurer que senderId n'est pas null ou vide
+                            val senderId = message.senderId.takeIf { it.isNotBlank() } ?: "unknown"
+                            
+                            // Du00e9terminer si le message vient de l'utilisateur actuel
+                            val isFromCurrentUser = senderId == currentUserId
+                            
+                            // Afficher les informations de du00e9bogage dans la console
+                            println("DEBUG: Message ID: ${message.id}, Content: ${message.content}")
+                            println("DEBUG: Message senderId: $senderId, CurrentUserId: $currentUserId")
+                            println("DEBUG: isFromCurrentUser: $isFromCurrentUser")
+                            
+                            // Ajouter un Spacer pour su00e9parer les messages
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
                             MessageItem(
                                 message = message,
-                                isFromCurrentUser = message.senderId == viewModel.getCurrentUserId(),
+                                isFromCurrentUser = isFromCurrentUser,
                                 onAttachmentClick = { /* Open attachment */ }
                             )
                         }
@@ -183,6 +200,16 @@ fun MessageItem(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isFromCurrentUser) Alignment.End else Alignment.Start
     ) {
+        // Afficher le nom de l'expu00e9diteur pour les messages qui ne sont pas de l'utilisateur actuel
+        if (!isFromCurrentUser && !message.senderName.isNullOrBlank()) {
+            Text(
+                text = message.senderName,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+            )
+        }
+        
         // Message bubble
         Surface(
             shape = RoundedCornerShape(

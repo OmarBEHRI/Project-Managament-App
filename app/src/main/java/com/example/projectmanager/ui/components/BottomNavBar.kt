@@ -2,6 +2,7 @@ package com.example.projectmanager.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.Icon
@@ -31,6 +32,7 @@ fun BottomNavBar(
         "dashboard" -> 0
         "projects" -> 1
         "tasks" -> 2
+        "chats" -> 3
         else -> 0
     }
     
@@ -64,6 +66,16 @@ fun BottomNavBar(
             },
             icon = { Icon(Icons.Default.Assignment, contentDescription = "Tasks") },
             label = { Text("Tasks") }
+        )
+        NavigationBarItem(
+            selected = selectedTab == 3,
+            onClick = {
+                if (selectedTab != 3) {
+                    appNavigator.navigateToChats()
+                }
+            },
+            icon = { Icon(Icons.Default.Chat, contentDescription = "Chat") },
+            label = { Text("Chat") }
         )
     }
 }

@@ -38,6 +38,8 @@ data class Message(
     val chatId: String = "",
     @get:PropertyName("sender_id")
     val senderId: String = "",
+    @get:PropertyName("sender_name")
+    val senderName: String? = null,
     val content: String = "",
     val type: MessageType = MessageType.TEXT,
     val attachments: List<FileAttachment> = emptyList(),

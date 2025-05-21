@@ -28,7 +28,7 @@ sealed class BottomNavItem(
     )
     
     object Chat : BottomNavItem(
-        route = "chat_list",
+        route = "chats",
         title = "Chat",
         icon = Icons.Default.Chat
     )

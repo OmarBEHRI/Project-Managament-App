@@ -3,6 +3,7 @@ package com.example.projectmanager.ui.home
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -18,6 +19,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     appNavigator: AppNavigator
 ) {
+    // Get the current route to determine which tab should be selected
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
@@ -64,6 +66,15 @@ fun HomeScreen(
                     icon = { Icon(Icons.Default.Assignment, contentDescription = "Tasks") },
                     label = { Text("Tasks") }
                 )
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = {
+                        selectedTab = 3
+                        appNavigator.navigateToChats()
+                    },
+                    icon = { Icon(Icons.Default.Chat, contentDescription = "Chat") },
+                    label = { Text("Chat") }
+                )
             }
         },
         floatingActionButton = {
@@ -72,6 +83,7 @@ fun HomeScreen(
                     when (selectedTab) {
                         1 -> appNavigator.navigateToCreateProject()
                         2 -> appNavigator.navigateToCreateTask()
+                        3 -> appNavigator.navigateToNewChat()
                     }
                 }
             ) {

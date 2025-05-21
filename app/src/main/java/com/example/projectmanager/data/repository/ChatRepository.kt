@@ -9,6 +9,7 @@ interface ChatRepository {
     fun getChats(userId: String): Flow<Resource<List<Chat>>>
     fun getProjectChats(projectId: String): Flow<Resource<List<Chat>>>
     fun getChatMessages(chatId: String): Flow<Resource<List<Message>>>
+    suspend fun getAllChatMessagesHistory(chatId: String): Resource<List<Message>>
     suspend fun getChat(chatId: String): Resource<Chat>
     suspend fun createChat(chat: Chat): Resource<Chat>
     suspend fun sendMessage(message: Message): Resource<Message>
