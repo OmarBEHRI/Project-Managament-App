@@ -70,7 +70,8 @@ fun DashboardScreen(
                 StatisticsSection(
                     totalProjects = uiState.totalProjects,
                     completedProjects = uiState.completedProjects,
-                    pendingTasks = uiState.pendingTasks
+                    pendingTasks = uiState.pendingTasks,
+                    completedTasks = uiState.completedTasks.size
                 )
             }
             
@@ -170,28 +171,29 @@ fun WelcomeSection(userName: String) {
 fun StatisticsSection(
     totalProjects: Int,
     completedProjects: Int,
-    pendingTasks: Int
+    pendingTasks: Int,
+    completedTasks: Int = 0
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         StatCard(
-            title = "Projects",
+            title = "My Projects",
             value = totalProjects.toString(),
             icon = Icons.Outlined.Folder,
             modifier = Modifier.weight(1f),
             iconTint = MaterialTheme.colorScheme.primary
         )
         StatCard(
-            title = "Completed",
-            value = completedProjects.toString(),
+            title = "Completed Tasks",
+            value = completedTasks.toString(),
             icon = Icons.Outlined.CheckCircle,
             modifier = Modifier.weight(1f),
             iconTint = MaterialTheme.colorScheme.tertiary
         )
         StatCard(
-            title = "Pending",
+            title = "Pending Tasks",
             value = pendingTasks.toString(),
             icon = Icons.Outlined.Assignment,
             modifier = Modifier.weight(1f),
@@ -311,7 +313,9 @@ fun ProjectCard(
                         modifier = Modifier
                             .weight(1f)
                             .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     )
                     
                     Spacer(modifier = Modifier.width(12.dp))

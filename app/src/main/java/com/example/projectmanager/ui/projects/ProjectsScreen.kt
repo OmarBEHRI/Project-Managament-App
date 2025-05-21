@@ -471,14 +471,15 @@ fun ModernProjectCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 LinearProgressIndicator(
-                    progress = { progressPercentage / 100f },
+                    progress = progressPercentage / 100f,
                     modifier = Modifier.fillMaxWidth(),
                     color = when {
                         progressPercentage >= 100f -> MaterialTheme.colorScheme.secondary
                         progressPercentage >= 75f -> MaterialTheme.colorScheme.primary
                         progressPercentage >= 25f -> MaterialTheme.colorScheme.tertiary
                         else -> MaterialTheme.colorScheme.error
-                    }
+                    },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 )
             }
             

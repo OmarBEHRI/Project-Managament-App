@@ -46,6 +46,7 @@ fun ProjectScreen(
     var showCreateTaskDialog by remember { mutableStateOf(false) }
     var showAiTaskGenerationDialog by remember { mutableStateOf(false) }
     var showAiTaskAssignmentDialog by remember { mutableStateOf(false) }
+    var showEditMetricsDialog by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabTitles = listOf("Overview", "Tasks", "Members", "Comments", "Attachments")
     
@@ -222,10 +223,16 @@ fun ProjectScreen(
                         
                         // Tab content
                         when (selectedTabIndex) {
-                            0 -> ProjectOverviewTab(project = project)
+                            0 -> ProjectOverviewTab(
+                                project = project,
+                                isCurrentUserManager = currentUserIsManager,
+                                onEditMetrics = { showEditMetricsDialog = true }
+                            )
                             1 -> ProjectTasksTabComponent(
                                 tasks = uiState.tasks,
-                                onTaskClick = { taskId -> appNavigator.navigateToTask(taskId) }
+                                onTaskClick = { taskId -> appNavigator.navigateToTask(taskId) },
+                                isCurrentUserManager = currentUserIsManager,
+                                onAiAssignTasks = { showAiTaskAssignmentDialog = true }
                             )
                             2 -> ProjectMembersTab(
                                 project = project,
@@ -286,7 +293,7 @@ fun ProjectScreen(
     }
     
     // AI Task Assignment Dialog
-    if (showAiTaskAssignmentDialog) {
+    if (showAiTaskAssignmentDialog && uiState.project != null) {
         AiTaskAssignmentDialog(
             isAssigning = uiState.isAssigningTasks,
             taskAssignments = uiState.taskAssignments,
@@ -294,11 +301,26 @@ fun ProjectScreen(
             members = uiState.members,
             error = uiState.taskAssignmentError,
             onAssignTasks = { viewModel.assignTasksWithAi() },
-            onSaveAssignments = { 
-                viewModel.saveTaskAssignments()
-                showAiTaskAssignmentDialog = false
-            },
+            onSaveAssignments = { viewModel.saveTaskAssignments() },
             onDismiss = { showAiTaskAssignmentDialog = false }
+        )
+    }
+    
+    // Edit Project Metrics dialog
+    if (showEditMetricsDialog && uiState.project != null) {
+        EditProjectMetricsDialog(
+            project = uiState.project!!,
+            onDismiss = { showEditMetricsDialog = false },
+            onSaveMetrics = { budgetAmount, budgetCurrency, actualCost, estimatedHours, actualHours ->
+                viewModel.updateProjectMetrics(
+                    budgetAmount = budgetAmount,
+                    budgetCurrency = budgetCurrency,
+                    actualCost = actualCost,
+                    estimatedHours = estimatedHours,
+                    actualHours = actualHours
+                )
+                showEditMetricsDialog = false
+            }
         )
     }
     

@@ -66,6 +66,9 @@ class DashboardViewModel @Inject constructor(
                     }
                 }
 
+                // Get current user ID
+                val currentUserId = userRepository.getCurrentUserId()
+
                 // Load project statistics and analytics data
                 combine(
                     projectRepository.getAll(),
@@ -73,42 +76,66 @@ class DashboardViewModel @Inject constructor(
                     taskRepository.getPendingTasks(),
                     taskRepository.getCompletedTasks(limit = 50)
                 ) { allProjectsResource, recentProjects, pendingTasks, completedTasks ->
+                    // Get all projects
                     val allProjects = if (allProjectsResource is Resource.Success) {
                         allProjectsResource.data ?: emptyList()
                     } else {
                         emptyList()
                     }
                     
+                    // Filter projects where the current user is a member
+                    val userProjects = allProjects.filter { project ->
+                        project.ownerId == currentUserId || 
+                        project.members.any { it.userId == currentUserId }
+                    }
+
+                    
                     // Debug logging to verify data
                     println("DEBUG: Total projects loaded: ${allProjects.size}")
+                    println("DEBUG: User projects loaded: ${userProjects.size}")
                     println("DEBUG: Recent projects loaded: ${recentProjects.size}")
                     println("DEBUG: Pending tasks loaded: ${pendingTasks.size}")
                     println("DEBUG: Completed tasks loaded: ${completedTasks.size}")
                     
-                    val totalProjects = allProjects.size
-                    val completedProjects = allProjects.count { it.isCompleted }
+                    // Filter recent projects to only include user's projects
+                    val userRecentProjects = recentProjects.filter { project ->
+                        project.ownerId == currentUserId || 
+                        project.members.any { it.userId == currentUserId }
+                    }
+                    
+                    // Filter tasks that are assigned to the current user
+                    val userPendingTasks = pendingTasks.filter { task ->
+                        task.assignedTo.contains(currentUserId)
+                    }
+                    
+                    val userCompletedTasks = completedTasks.filter { task ->
+                        task.assignedTo.contains(currentUserId)
+                    }
+                    
+                    val totalProjects = userProjects.size
+                    val completedProjects = userProjects.count { it.isCompleted }
                     
                     // Group projects by status for filtering and analytics
-                    val projectsByStatus = allProjects.groupBy { 
+                    val projectsByStatus = userProjects.groupBy { 
                         it.status.name
                     }
                     
                     // Count projects by status for pie chart
                     val projectStatusCounts = projectsByStatus.mapValues { it.value.size }
                     
-                    // Calculate task completion rate
-                    val totalTasks = completedTasks.size + pendingTasks.size
-                    val taskCompletionRate = if (totalTasks > 0) {
-                        (completedTasks.size.toFloat() / totalTasks.toFloat()) * 100f
+                    // Calculate task completion rate for user's tasks
+                    val userTotalTasks = userCompletedTasks.size + userPendingTasks.size
+                    val taskCompletionRate = if (userTotalTasks > 0) {
+                        (userCompletedTasks.size.toFloat() / userTotalTasks.toFloat()) * 100f
                     } else {
                         0f
                     }
                     
-                    // Calculate average time to completion for tasks by project
-                    val timeToCompletionData = calculateTimeToCompletion(completedTasks)
+                    // Calculate average time to completion for user's completed tasks by project
+                    val timeToCompletionData = calculateTimeToCompletion(userCompletedTasks)
                     
-                    // Calculate team productivity (tasks completed per week)
-                    val teamProductivityData = calculateTeamProductivity(completedTasks)
+                    // Calculate team productivity (tasks completed per week) for user's tasks
+                    val teamProductivityData = calculateTeamProductivity(userCompletedTasks)
                     
                     // Calculate contribution metrics for each team member
                     val memberContributions = mutableMapOf<String, Int>()
@@ -152,14 +179,14 @@ class DashboardViewModel @Inject constructor(
                         state.copy(
                             totalProjects = totalProjects,
                             completedProjects = completedProjects,
-                            pendingTasks = pendingTasks.size,
-                            recentProjects = recentProjects,
-                            upcomingTasks = pendingTasks.take(5),
+                            pendingTasks = userPendingTasks.size,
+                            recentProjects = userRecentProjects,
+                            upcomingTasks = userPendingTasks.take(5),
                             projectsByStatus = projectsByStatus,
                             projectStatusCounts = projectStatusCounts,
                             taskCompletionRate = taskCompletionRate,
-                            completedTasks = completedTasks,
-                            totalTasks = totalTasks,
+                            completedTasks = userCompletedTasks,
+                            totalTasks = userTotalTasks,
                             timeToCompletionData = timeToCompletionData,
                             teamProductivityData = teamProductivityData,
                             teamMembers = teamMembers,

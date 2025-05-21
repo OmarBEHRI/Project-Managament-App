@@ -438,6 +438,45 @@ class ProjectViewModel @Inject constructor(
     }
     
     /**
+     * Update project metrics
+     */
+    fun updateProjectMetrics(
+        budgetAmount: Double,
+        budgetCurrency: String,
+        actualCost: Double,
+        estimatedHours: Float,
+        actualHours: Float
+    ) {
+        viewModelScope.launch {
+            val project = _uiState.value.project ?: return@launch
+            
+            try {
+                val updatedProject = project.copy(
+                    budgetAmount = budgetAmount,
+                    budgetCurrency = budgetCurrency,
+                    actualCost = actualCost,
+                    estimatedHours = estimatedHours,
+                    actualHours = actualHours
+                )
+                
+                projectRepository.updateProject(updatedProject)
+                _uiState.update { it.copy(project = updatedProject) }
+                
+                // Show success message
+                _uiState.update { it.copy(error = "Project metrics updated successfully") }
+                kotlinx.coroutines.delay(3000)
+                _uiState.update { it.copy(error = null) }
+                
+            } catch (e: Exception) {
+                Timber.e(e, "Error updating project metrics")
+                _uiState.update { it.copy(error = "Failed to update project metrics: ${e.message}") }
+                kotlinx.coroutines.delay(3000)
+                _uiState.update { it.copy(error = null) }
+            }
+        }
+    }
+    
+    /**
      * Generate tasks using AI based on the project description
      */
     fun generateTasksWithAi() {
