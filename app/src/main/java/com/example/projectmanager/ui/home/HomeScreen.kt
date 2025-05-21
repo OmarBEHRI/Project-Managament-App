@@ -21,23 +21,6 @@ fun HomeScreen(
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Dashboard") },
-                actions = {
-                    // Add Analytics Dashboard button
-                    IconButton(onClick = { appNavigator.navigateToAnalyticsDashboard() }) {
-                        Icon(Icons.Default.BarChart, contentDescription = "Analytics Dashboard")
-                    }
-                    IconButton(onClick = { appNavigator.navigateToProfile() }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
-                    }
-                    IconButton(onClick = { appNavigator.navigateToSettings() }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
-                }
-            )
-        },
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(

@@ -73,22 +73,7 @@ fun AnalyticsDashboardScreen(
                     )
                 )
                 
-                // Welcome message
-                if (uiState.userName.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Welcome, ${uiState.userName}!",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                // No welcome message in Analytics Dashboard
             }
         }
     ) { paddingValues ->
