@@ -1,9 +1,11 @@
 package com.example.projectmanager.ui.tasks
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -11,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -18,11 +22,13 @@ import com.example.projectmanager.data.model.Task
 import com.example.projectmanager.data.model.TaskStatus
 import com.example.projectmanager.data.model.TaskPriority
 import com.example.projectmanager.ui.components.ProjectDatePicker
+import com.example.projectmanager.ui.components.TaskStatusChip
+import com.example.projectmanager.ui.components.PriorityChip
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -47,34 +53,70 @@ fun TasksScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tasks") },
+                title = { 
+                    Text(
+                        "Tasks", 
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) 
+                },
                 actions = {
                     IconButton(onClick = { showFilterSheet = true }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                        Icon(
+                            Icons.Default.FilterList, 
+                            contentDescription = "Filter",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
-                    // Add Task icon removed as requested
                 }
             )
         },
-        // Floating action button removed as requested
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showCreateDialog = true },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Task")
+            }
+        }
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when {
                 uiState.isLoading -> {
                     CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 3.dp
                     )
                 }
                 uiState.error != null -> {
-                    Text(
-                        text = uiState.error!!,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = uiState.error!!,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
                 }
                 uiState.tasks.isEmpty() -> {
                     EmptyTasksMessage(
@@ -155,7 +197,7 @@ fun TaskList(
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(
             items = tasks,
@@ -180,94 +222,171 @@ fun TaskList(
                 backgroundContent = {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.errorContainer
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 16.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.onError,
-                                modifier = Modifier.align(Alignment.CenterEnd)
-                            )
+                            Row(
+                                modifier = Modifier.align(Alignment.CenterEnd),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Delete",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
                         }
                     }
                 },
                 content = {
-                    // Using a simple Card instead of TaskListItem since we need to implement it
-                    Card(
+                    ElevatedCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onTaskClick(task.id) }
+                            .clickable { onTaskClick(task.id) },
+                        elevation = CardDefaults.elevatedCardElevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp
+                        ),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = if (task.isCompleted) 
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                            else 
+                                MaterialTheme.colorScheme.surface
+                        )
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
                         ) {
                             Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Priority indicator
                                 Box(
                                     modifier = Modifier
-                                        .size(12.dp)
+                                        .size(24.dp)
                                         .background(
-                                            color = when (task.priority) {
-                                                TaskPriority.LOW -> MaterialTheme.colorScheme.tertiary
-                                                TaskPriority.MEDIUM -> MaterialTheme.colorScheme.secondary
-                                                TaskPriority.HIGH -> MaterialTheme.colorScheme.primary
-                                                TaskPriority.URGENT -> MaterialTheme.colorScheme.error
-                                            },
-                                            shape = androidx.compose.foundation.shape.CircleShape
+                                            color = if (task.isCompleted) 
+                                                MaterialTheme.colorScheme.primary 
+                                            else 
+                                                MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (task.isCompleted) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Completed",
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(16.dp)
                                         )
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                }
                                 
-                                Text(
-                                    text = task.title,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f)
-                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = task.title,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                                        color = if (task.isCompleted) 
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        else 
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
+                                    
+                                    if (task.description.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = task.description,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                
+                                task.dueDate?.let { dueDate ->
+                                    Column(
+                                        horizontalAlignment = Alignment.End
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CalendarToday,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                                tint = if (task.isOverdue) 
+                                                    MaterialTheme.colorScheme.error 
+                                                else 
+                                                    MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = SimpleDateFormat("MMM dd", Locale.getDefault()).format(dueDate),
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = if (task.isOverdue) 
+                                                    MaterialTheme.colorScheme.error 
+                                                else 
+                                                    MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             
-                            if (task.description.isNotBlank()) {
-                                Text(
-                                    text = task.description,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                            
+                            // Using Row instead of experimental FlowRow
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Status chip
-                                SuggestionChip(
-                                    onClick = { },
-                                    label = { Text(task.status.name) }
-                                )
+                                TaskStatusChip(status = task.status)
                                 
-                                // Due date
-                                task.dueDate?.let { date ->
-                                    val formatter = SimpleDateFormat("MMM dd", Locale.getDefault())
-                                    Text(
-                                        text = formatter.format(date),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = if (task.isOverdue) MaterialTheme.colorScheme.error 
-                                                else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                PriorityChip(priority = task.priority)
+                                
+                                if (task.assignedTo.isNotEmpty()) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        shape = MaterialTheme.shapes.small
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Group,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "${task.assignedTo.size} assigned",
+                                                style = MaterialTheme.typography.labelMedium
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

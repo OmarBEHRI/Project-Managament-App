@@ -6,9 +6,11 @@ import com.example.projectmanager.data.model.*
 import com.example.projectmanager.data.repository.TaskRepository
 import com.example.projectmanager.data.repository.UserRepository
 import com.example.projectmanager.util.Resource
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -28,7 +30,8 @@ data class TaskUiState(
 @HiltViewModel
 class TaskViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
     private var currentUserId: String? = null
@@ -86,7 +89,39 @@ class TaskViewModel @Inject constructor(
     private fun loadSubtasks(parentTaskId: String) {
         viewModelScope.launch {
             try {
-                taskRepository.getTasksByProject(parentTaskId).collect { subtasks ->
+                // Query tasks where parent_task_id equals the current task's ID
+                // This is more accurate than using project ID for subtasks
+                val subtasksFlow = flow {
+                    val snapshot = firestore.collection("tasks")
+                        .whereEqualTo("parent_task_id", parentTaskId)
+                        .get()
+                        .await()
+                    
+                    val subtasks = snapshot.documents.mapNotNull { doc ->
+                        try {
+                            Task(
+                                id = doc.id,
+                                title = doc.getString("title") ?: "",
+                                description = doc.getString("description") ?: "",
+                                projectId = doc.getString("project_id") ?: "",
+                                parentTaskId = doc.getString("parent_task_id"),
+                                assignedTo = (doc.get("assigned_to") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                                createdBy = doc.getString("created_by") ?: "",
+                                status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.TODO,
+                                priority = doc.getString("priority")?.let { TaskPriority.valueOf(it) } ?: TaskPriority.MEDIUM,
+                                dueDate = doc.getDate("due_date"),
+                                isCompleted = doc.getBoolean("completed") ?: false
+                            )
+                        } catch (e: Exception) {
+                            println("Error mapping subtask document ${doc.id}: ${e.message}")
+                            null
+                        }
+                    }
+                    emit(subtasks)
+                }
+                
+                subtasksFlow.collect { subtasks ->
+                    println("Found ${subtasks.size} subtasks for task $parentTaskId")
                     _uiState.update {
                         it.copy(
                             subtasks = subtasks,
@@ -95,6 +130,8 @@ class TaskViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
+                println("Error loading subtasks: ${e.message}")
+                e.printStackTrace()
                 _uiState.update {
                     it.copy(
                         error = e.message ?: "Failed to load subtasks"
@@ -178,39 +215,45 @@ class TaskViewModel @Inject constructor(
             _uiState.update { it.copy(isUpdating = true) }
             
             try {
-                val subtask = Task(
-                    id = UUID.randomUUID().toString(),
-                    title = title,
-                    description = description,
-                    projectId = parentTask.projectId,
-                    parentTaskId = parentTask.id,
-                    createdBy = currentUserId ?: "",
-                    status = TaskStatus.TODO,
-                    priority = TaskPriority.MEDIUM,
-                    dueDate = dueDate,
-                    createdAt = Date()
+                // Create a document reference first to get the ID
+                val documentRef = firestore.collection("tasks").document()
+                
+                // Create the subtask with proper fields
+                val subtaskMap = mapOf(
+                    "title" to title,
+                    "description" to description,
+                    "project_id" to parentTask.projectId,
+                    "parent_task_id" to parentTask.id,  // This is crucial for subtask relationship
+                    "created_by" to (currentUserId ?: ""),
+                    "status" to TaskStatus.TODO.name,
+                    "priority" to TaskPriority.MEDIUM.name,
+                    "due_date" to dueDate,
+                    "createdAt" to Date(),
+                    "updatedAt" to Date(),
+                    "completed" to false,
+                    "assigned_to" to listOf<String>() // Empty list initially
                 )
                 
-                val result = taskRepository.createTask(subtask)
+                // Log the subtask creation
+                println("Creating subtask with parent task ID: ${parentTask.id}")
+                println("Subtask details: title=$title, project=${parentTask.projectId}")
                 
-                if (result is Resource.Success) {
-                    loadSubtasks(parentTask.id)
-                    _uiState.update { 
-                        it.copy(
-                            isUpdating = false,
-                            updateSuccess = true,
-                            error = null
-                        )
-                    }
-                } else if (result is Resource.Error) {
-                    _uiState.update { 
-                        it.copy(
-                            isUpdating = false,
-                            error = result.message
-                        )
-                    }
+                // Save to Firestore
+                documentRef.set(subtaskMap).await()
+                
+                // Refresh the subtasks list
+                loadSubtasks(parentTask.id)
+                
+                _uiState.update { 
+                    it.copy(
+                        isUpdating = false,
+                        updateSuccess = true,
+                        error = null
+                    )
                 }
             } catch (e: Exception) {
+                println("Error creating subtask: ${e.message}")
+                e.printStackTrace()
                 _uiState.update { 
                     it.copy(
                         isUpdating = false,
@@ -306,5 +349,52 @@ class TaskViewModel @Inject constructor(
 
     fun resetUpdateState() {
         _uiState.update { it.copy(updateSuccess = false, error = null) }
+    }
+    
+    fun toggleSubtaskCompletion(subtaskId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdating = true) }
+            
+            try {
+                // Get the current subtask
+                val subtask = _uiState.value.subtasks.find { it.id == subtaskId } ?: return@launch
+                
+                // Toggle completion status
+                val isCompleted = !subtask.isCompleted
+                val completedAt = if (isCompleted) Date() else null
+                val status = if (isCompleted) TaskStatus.COMPLETED else TaskStatus.TODO
+                
+                // Update in Firestore
+                val updates = mapOf(
+                    "completed" to isCompleted,
+                    "completed_at" to completedAt,
+                    "status" to status.name
+                )
+                
+                println("Toggling subtask $subtaskId completion to $isCompleted")
+                firestore.collection("tasks").document(subtaskId).update(updates).await()
+                
+                // Refresh subtasks
+                val parentTaskId = _uiState.value.task?.id ?: return@launch
+                loadSubtasks(parentTaskId)
+                
+                _uiState.update { 
+                    it.copy(
+                        isUpdating = false,
+                        updateSuccess = true,
+                        error = null
+                    )
+                }
+            } catch (e: Exception) {
+                println("Error toggling subtask completion: ${e.message}")
+                e.printStackTrace()
+                _uiState.update { 
+                    it.copy(
+                        isUpdating = false,
+                        error = e.message ?: "Failed to update subtask"
+                    )
+                }
+            }
+        }
     }
 }

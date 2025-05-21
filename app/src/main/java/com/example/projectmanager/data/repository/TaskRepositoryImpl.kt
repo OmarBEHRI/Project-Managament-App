@@ -70,14 +70,25 @@ class TaskRepositoryImpl @Inject constructor(
                         id = doc.id,
                         title = doc.getString("title") ?: "",
                         description = doc.getString("description") ?: "",
+                        richDescription = null, // Will be implemented later if needed
                         projectId = doc.getString("project_id") ?: "",
+                        parentTaskId = doc.getString("parent_task_id"),
+                        subtasks = emptyList(), // Will be populated separately
                         assignedTo = (doc.get("assigned_to") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
                         createdBy = doc.getString("created_by") ?: "",
                         status = doc.getString("status")?.let { TaskStatus.valueOf(it) } ?: TaskStatus.TODO,
                         priority = doc.getString("priority")?.let { TaskPriority.valueOf(it) } ?: TaskPriority.MEDIUM,
+                        startDate = doc.getDate("start_date"),
                         dueDate = doc.getDate("due_date"),
+                        createdAt = doc.getDate("createdAt"),
+                        updatedAt = doc.getDate("updatedAt"),
+                        tags = (doc.get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
                         isCompleted = doc.getBoolean("completed") ?: false,
-                        estimatedHours = doc.getDouble("estimated_hours")?.toFloat()
+                        completedAt = doc.getDate("completed_at"),
+                        isOverdue = doc.getBoolean("overdue") ?: false,
+                        estimatedHours = doc.getDouble("estimated_hours")?.toFloat(),
+                        actualHours = doc.getDouble("actual_hours")?.toFloat(),
+                        milestoneId = doc.getString("milestone_id")
                     )
                 } catch (e: Exception) {
                     println("Error mapping document ${doc.id}: ${e.message}")

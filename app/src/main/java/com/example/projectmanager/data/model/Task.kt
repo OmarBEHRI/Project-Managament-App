@@ -36,7 +36,9 @@ data class Task(
     val isCompleted: Boolean = false,
     @get:PropertyName("completed_at")
     val completedAt: Date? = null,
-    val isOverdue: Boolean = false,
+    @set:PropertyName("overdue")
+    @get:PropertyName("overdue")
+    var isOverdue: Boolean = false,
     val dependencies: List<TaskDependency> = emptyList(),
     @get:PropertyName("estimated_hours")
     val estimatedHours: Float? = null,
