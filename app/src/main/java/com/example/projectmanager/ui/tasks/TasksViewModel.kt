@@ -180,17 +180,8 @@ class TasksViewModel @Inject constructor(
     fun deleteTask(taskId: String) {
         viewModelScope.launch {
             try {
-                when (val result = taskRepository.deleteTask(taskId)) {
-                    is Resource.Success -> {
-                        loadTasks() // Refresh the tasks list
-                    }
-                    is Resource.Error -> {
-                        _uiState.update { 
-                            it.copy(error = result.message)
-                        }
-                    }
-                    else -> {}
-                }
+                taskRepository.deleteTask(taskId)
+                loadTasks() // Refresh the task list
             } catch (e: Exception) {
                 _uiState.update { 
                     it.copy(error = e.message ?: "Failed to delete task")
@@ -253,6 +244,35 @@ class TasksViewModel @Inject constructor(
                 _uiState.update { 
                     it.copy(error = e.message ?: "Failed to update task status")
                 }
+            }
+        }
+    }
+    
+    fun toggleTaskCompletion(taskId: String, isCompleted: Boolean) {
+        viewModelScope.launch {
+            try {
+                // Find the task in the current list
+                val task = _uiState.value.tasks.find { it.id == taskId } ?: return@launch
+                
+                // Create an updated task with the toggled completion status
+                val updatedTask = task.copy(
+                    isCompleted = isCompleted,
+                    status = if (isCompleted) TaskStatus.COMPLETED else task.status
+                )
+                
+                // Update the task in the repository
+                taskRepository.updateTask(updatedTask)
+                
+                // Update the local task list
+                val updatedTasks = _uiState.value.tasks.map { 
+                    if (it.id == taskId) updatedTask else it 
+                }
+                _uiState.update { it.copy(tasks = updatedTasks) }
+                
+                // Reload tasks to ensure consistency with the backend
+                loadTasks()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Failed to update task: ${e.message}") }
             }
         }
     }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -174,27 +175,26 @@ fun ProjectHeader(
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                // Enhanced progress bar with rounded corners and track color
+                // Outlined green progress bar with rounded corners
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(12.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .border(
+                            width = 1.dp,
+                            color = Color(0xFF4CAF50), // Material Green
+                            shape = RoundedCornerShape(6.dp)
+                        )
+                        .background(Color(0xFFEEEEEE)) // Light gray background
+                        .padding(1.dp) // Padding to ensure progress doesn't overlap border
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(progressPercentage / 100f)
                             .fillMaxHeight()
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                when {
-                                    progressPercentage >= 100f -> MaterialTheme.colorScheme.secondary
-                                    progressPercentage >= 75f -> MaterialTheme.colorScheme.primary
-                                    progressPercentage >= 25f -> MaterialTheme.colorScheme.tertiary
-                                    else -> MaterialTheme.colorScheme.error
-                                }
-                            )
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(Color(0xFF4CAF50)) // Material Green
                     )
                 }
                 

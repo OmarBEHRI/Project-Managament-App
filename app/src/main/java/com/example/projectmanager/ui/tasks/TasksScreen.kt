@@ -1,7 +1,9 @@
 package com.example.projectmanager.ui.tasks
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -161,6 +163,9 @@ fun TasksScreen(
                         },
                         onDeleteTask = { taskId ->
                             showDeleteConfirmation = taskId
+                        },
+                        onToggleTaskCompletion = { taskId, isCompleted ->
+                            viewModel.toggleTaskCompletion(taskId, isCompleted)
                         }
                     )
                 }
@@ -224,7 +229,8 @@ fun TasksScreen(
 fun TaskList(
     tasks: List<Task>,
     onTaskClick: (String) -> Unit,
-    onDeleteTask: (String) -> Unit
+    onDeleteTask: (String) -> Unit,
+    onToggleTaskCompletion: (String, Boolean) -> Unit
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -283,20 +289,23 @@ fun TaskList(
                     }
                 },
                 content = {
-                    ElevatedCard(
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onTaskClick(task.id) },
-                        elevation = CardDefaults.elevatedCardElevation(
-                            defaultElevation = 4.dp,
-                            pressedElevation = 8.dp
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 2.dp
                         ),
-                        colors = CardDefaults.elevatedCardColors(
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
                             containerColor = if (task.isCompleted) 
                                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
                             else 
                                 MaterialTheme.colorScheme.surface
-                        )
+                        ),
+                        border = if (task.priority == TaskPriority.HIGH) {
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                        } else null
                     ) {
                         Column(
                             modifier = Modifier
@@ -307,6 +316,7 @@ fun TaskList(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                // Modern checkbox design
                                 Box(
                                     modifier = Modifier
                                         .size(24.dp)
@@ -314,9 +324,21 @@ fun TaskList(
                                             color = if (task.isCompleted) 
                                                 MaterialTheme.colorScheme.primary 
                                             else 
-                                                MaterialTheme.colorScheme.surfaceVariant,
+                                                MaterialTheme.colorScheme.surface,
                                             shape = CircleShape
-                                        ),
+                                        )
+                                        .border(
+                                            width = 1.5.dp,
+                                            color = if (task.isCompleted) 
+                                                MaterialTheme.colorScheme.primary 
+                                            else 
+                                                MaterialTheme.colorScheme.outline,
+                                            shape = CircleShape
+                                        )
+                                        .clickable {
+                                            // Toggle task completion status
+                                            onToggleTaskCompletion(task.id, !task.isCompleted)
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (task.isCompleted) {
