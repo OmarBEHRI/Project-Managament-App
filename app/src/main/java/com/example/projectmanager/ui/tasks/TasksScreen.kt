@@ -35,6 +35,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import com.example.projectmanager.navigation.AppNavigator
+import com.example.projectmanager.navigation.MainScreenNavigator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,8 +64,9 @@ fun TasksScreen(
                         )
                     ) 
                 },
+                // Only show back button if we're not on the main Tasks screen (i.e., if appNavigator is provided)
                 navigationIcon = {
-                    if (appNavigator != null) {
+                    if (appNavigator != null && appNavigator !is MainScreenNavigator) {
                         IconButton(onClick = { appNavigator.navigateBack() }) {
                             Icon(
                                 Icons.Default.ArrowBack,
@@ -84,6 +86,15 @@ fun TasksScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            // Only show bottom navigation if we're on the main Tasks screen
+            if (appNavigator != null && appNavigator is MainScreenNavigator) {
+                com.example.projectmanager.ui.components.BottomNavBar(
+                    currentRoute = "tasks",
+                    appNavigator = appNavigator
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(

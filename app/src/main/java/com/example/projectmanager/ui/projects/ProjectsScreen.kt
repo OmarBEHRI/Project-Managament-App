@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.projectmanager.data.model.*
+import com.example.projectmanager.navigation.AppNavigator
+import com.example.projectmanager.navigation.MainScreenNavigator
+import com.example.projectmanager.ui.components.BottomNavBar
 import com.example.projectmanager.ui.components.ProjectDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
@@ -43,7 +46,8 @@ import kotlin.math.min
 @Composable
 fun ProjectsScreen(
     viewModel: ProjectsViewModel = hiltViewModel(),
-    onProjectClick: (String) -> Unit = {}
+    onProjectClick: (String) -> Unit = {},
+    appNavigator: AppNavigator? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -69,6 +73,17 @@ fun ProjectsScreen(
             Column {
                 TopAppBar(
                     title = { Text("Projects") },
+                    navigationIcon = {
+                        if (appNavigator != null && appNavigator !is MainScreenNavigator) {
+                            IconButton(onClick = { appNavigator.navigateBack() }) {
+                                Icon(
+                                    Icons.Default.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
                     actions = {
                         IconButton(onClick = { isSearching = !isSearching }) {
                             Icon(
@@ -116,6 +131,15 @@ fun ProjectsScreen(
                 if (!isSearching && uiState.projects.isNotEmpty()) {
                     ProjectStatsSummary(projects = uiState.projects)
                 }
+            }
+        },
+        bottomBar = {
+            // Only show bottom navigation if we're on the main Projects screen
+            if (appNavigator != null && appNavigator is MainScreenNavigator) {
+                BottomNavBar(
+                    currentRoute = "projects",
+                    appNavigator = appNavigator
+                )
             }
         },
         floatingActionButton = {

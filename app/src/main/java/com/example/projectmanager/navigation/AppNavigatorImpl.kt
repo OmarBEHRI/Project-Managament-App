@@ -8,7 +8,7 @@ import javax.inject.Singleton
 @Singleton
 class AppNavigatorImpl @Inject constructor(
     private val auth: FirebaseAuth
-) : AppNavigator {
+) : MainScreenNavigator {
     private var navController: NavController? = null
 
     fun setNavController(navController: NavController) {

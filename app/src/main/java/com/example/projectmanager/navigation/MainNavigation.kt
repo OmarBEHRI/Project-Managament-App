@@ -45,7 +45,8 @@ fun MainNavigation(
             ProjectsScreen(
                 onProjectClick = { projectId ->
                     navController.navigate("${Routes.PROJECT_DETAIL_ROUTE}/$projectId")
-                }
+                },
+                appNavigator = appNavigator
             )
         }
 
