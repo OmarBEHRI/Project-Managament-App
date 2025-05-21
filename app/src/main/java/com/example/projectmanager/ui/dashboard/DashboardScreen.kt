@@ -1,8 +1,9 @@
 package com.example.projectmanager.ui.dashboard
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,61 +18,125 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.projectmanager.data.model.Project
 import com.example.projectmanager.data.model.Task
+import com.example.projectmanager.navigation.AppNavigator
 import com.example.projectmanager.ui.theme.GradientStart
 import com.example.projectmanager.ui.theme.GradientEnd
 
 @Composable
 fun DashboardScreen(
-    viewModel: DashboardViewModel = hiltViewModel()
+    viewModel: DashboardViewModel = hiltViewModel(),
+    appNavigator: AppNavigator? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedStatus by remember { mutableStateOf<String?>(null) }
+    
+    // Filter projects based on selected status
+    val filteredProjects = if (selectedStatus != null) {
+        uiState.projectsByStatus[selectedStatus] ?: emptyList()
+    } else {
+        uiState.recentProjects
+    }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        item {
-            WelcomeSection(uiState.userName)
-        }
-        
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            StatisticsSection(
-                totalProjects = uiState.totalProjects,
-                completedProjects = uiState.completedProjects,
-                pendingTasks = uiState.pendingTasks
-            )
-        }
-        
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Recent Projects",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        
-        items(uiState.recentProjects) { project ->
-            ProjectCard(project)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Upcoming Tasks",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        
-        items(uiState.upcomingTasks) { task ->
-            TaskCard(task)
-            Spacer(modifier = Modifier.height(8.dp))
+    Surface(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                WelcomeSection(userName = uiState.userName)
+            }
+            
+            item {
+                StatisticsSection(
+                    totalProjects = uiState.totalProjects,
+                    completedProjects = uiState.completedProjects,
+                    pendingTasks = uiState.pendingTasks
+                )
+            }
+            
+            // Analytics Dashboard Button
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                AnalyticsDashboardButton(onClick = {
+                    appNavigator?.navigateToAnalyticsDashboard()
+                })
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Projects",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    // View all projects button
+                    TextButton(onClick = { appNavigator?.navigateToProjects() }) {
+                        Text("View All")
+                    }
+                }
+            }
+            
+            // Project status filter chips
+            item {
+                ProjectStatusFilter(
+                    statusCounts = uiState.projectStatusCounts,
+                    selectedStatus = selectedStatus,
+                    onStatusSelected = { status ->
+                        selectedStatus = if (selectedStatus == status) null else status
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
+            // Show filtered projects or message if none
+            if (filteredProjects.isEmpty()) {
+                item {
+                    EmptyProjectsMessage(statusFilter = selectedStatus)
+                }
+            } else {
+                items(filteredProjects) { project ->
+                    ProjectCard(project = project)
+                }
+            }
+            
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Upcoming Tasks",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
+            if (uiState.upcomingTasks.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No upcoming tasks",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            } else {
+                items(uiState.upcomingTasks) { task ->
+                    TaskCard(task = task)
+                }
+            }
         }
     }
 }
@@ -235,6 +300,107 @@ fun TaskCard(task: Task) {
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProjectStatusFilter(
+    statusCounts: Map<String, Int>,
+    selectedStatus: String?,
+    onStatusSelected: (String) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(statusCounts.entries.toList()) { (status, count) ->
+            FilterChip(
+                selected = status == selectedStatus,
+                onClick = { onStatusSelected(status) },
+                label = { Text("$status ($count)") },
+                leadingIcon = if (status == selectedStatus) {
+                    {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                } else null
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyProjectsMessage(statusFilter: String?) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Default.FolderOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = if (statusFilter != null) "No $statusFilter projects found" else "No projects found",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+fun AnalyticsDashboardButton(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.BarChart,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Analytics Dashboard",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "View detailed project analytics",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
     }
