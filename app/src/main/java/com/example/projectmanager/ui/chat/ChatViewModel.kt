@@ -216,18 +216,21 @@ class ChatViewModel @Inject constructor(
                         
                         // Envoyer le message dans la nouvelle conversation
                         // S'assurer que l'ID de l'expu00e9diteur est correctement du00e9fini
+                        // Utiliser trim() pour u00e9viter les probu00e8mes d'espaces
+                        val cleanCurrentUserId = currentUserId.trim()
+                        
                         val message = Message(
                             chatId = chat.id,
-                            senderId = currentUserId,  // ID de l'utilisateur actuel
-                            senderName = senderName,    // Nom de l'utilisateur actuel
+                            senderId = cleanCurrentUserId,  // ID de l'utilisateur actuel (nettoyu00e9)
+                            senderName = senderName,        // Nom de l'utilisateur actuel
                             content = messageText,
                             type = MessageType.TEXT,
                             status = MessageStatus.SENDING,
-                            readBy = listOf(currentUserId)  // Marquer comme lu par l'expu00e9diteur
+                            readBy = listOf(cleanCurrentUserId)  // Marquer comme lu par l'expu00e9diteur
                         )
                         
                         // Afficher des informations de du00e9bogage
-                        println("DEBUG SEND: Creating message with senderId: $currentUserId")
+                        println("DEBUG SEND VM: Creating message with senderId: '$cleanCurrentUserId'")
                         
                         _uiState.update { it.copy(messageText = "") }
                         
@@ -239,7 +242,8 @@ class ChatViewModel @Inject constructor(
                         }
                         
                         // Envoyer le message u00e0 Firebase
-                        chatRepository.sendMessage(message)
+                        val result = chatRepository.sendMessage(message)
+                        println("DEBUG SEND VM: Result of sending message: $result")
                         pendingDirectChatUserId = null  // Ru00e9initialiser l'ID de l'utilisateur en attente
                     }
                     is Resource.Error -> {
@@ -248,20 +252,20 @@ class ChatViewModel @Inject constructor(
                     else -> {}
                 }
             } else {
-                // Conversation existante, envoyer le message normalement
-                // S'assurer que l'ID de l'expu00e9diteur est correctement du00e9fini
+                val cleanCurrentUserId = currentUserId.trim()
+                
                 val message = Message(
                     chatId = uiState.value.chat!!.id,
-                    senderId = currentUserId,  // ID de l'utilisateur actuel
-                    senderName = senderName,    // Nom de l'utilisateur actuel
+                    senderId = cleanCurrentUserId,  // ID de l'utilisateur actuel (nettoyu00e9)
+                    senderName = senderName,        // Nom de l'utilisateur actuel
                     content = messageText,
                     type = MessageType.TEXT,
                     status = MessageStatus.SENDING,
-                    readBy = listOf(currentUserId)  // Marquer comme lu par l'expu00e9diteur
+                    readBy = listOf(cleanCurrentUserId)  // Marquer comme lu par l'expu00e9diteur
                 )
                 
                 // Afficher des informations de du00e9bogage
-                println("DEBUG SEND: Creating message with senderId: $currentUserId")
+                println("DEBUG SEND VM: Creating message with senderId: '$cleanCurrentUserId'")
 
                 _uiState.update { it.copy(messageText = "") }
                 
@@ -278,7 +282,9 @@ class ChatViewModel @Inject constructor(
                             it.copy(error = result.message)
                         }
                     }
-                    else -> {}
+                    else -> {
+                        println("DEBUG SEND VM: Result of sending message: $result")
+                    }
                 }
             }
         }

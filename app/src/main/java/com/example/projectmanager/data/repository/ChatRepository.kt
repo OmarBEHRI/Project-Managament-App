@@ -16,4 +16,7 @@ interface ChatRepository {
     suspend fun markMessageAsRead(messageId: String, chatId: String, userId: String): Resource<Unit>
     suspend fun deleteMessage(messageId: String, chatId: String): Resource<Unit>
     suspend fun deleteChat(chatId: String): Resource<Unit>
+    
+    // Find an existing direct chat between two users
+    suspend fun findDirectChat(user1Id: String, user2Id: String): Resource<Chat?>
 } 

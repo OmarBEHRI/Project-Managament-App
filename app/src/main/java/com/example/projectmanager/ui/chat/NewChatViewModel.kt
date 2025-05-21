@@ -103,22 +103,62 @@ class NewChatViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             val currentUserId = getCurrentUserId()
             
-            // Créer directement un nouveau chat sans vérifier s'il existe déjà
-            // Cela évite les problèmes liés à l'attente de la requête Firebase
-            val newChat = Chat(
-                type = ChatType.DIRECT,
-                participants = listOf(currentUserId, userId),
-                unreadCount = mapOf(currentUserId to 0, userId to 0)
-            )
-            
-            when (val createResult = chatRepository.createChat(newChat)) {
+            // D'abord, vérifier si une conversation existe déjà entre ces deux utilisateurs
+            when (val findResult = chatRepository.findDirectChat(currentUserId, userId)) {
                 is Resource.Success<*> -> {
-                    val chat = createResult.data as Chat
-                    _uiState.update { it.copy(isLoading = false) }
-                    onSuccess(chat.id)
+                    val existingChat = findResult.data as Chat?
+                    
+                    if (existingChat != null) {
+                        // Une conversation existe déjà, utiliser celle-ci
+                        println("DEBUG: Conversation existante trouvée avec ID: ${existingChat.id}")
+                        _uiState.update { it.copy(isLoading = false) }
+                        onSuccess(existingChat.id)
+                    } else {
+                        // Aucune conversation existante, en créer une nouvelle
+                        println("DEBUG: Aucune conversation existante trouvée, création d'une nouvelle")
+                        val newChat = Chat(
+                            type = ChatType.DIRECT,
+                            participants = listOf(currentUserId, userId),
+                            unreadCount = mapOf(currentUserId to 0, userId to 0)
+                        )
+                        
+                        when (val createResult = chatRepository.createChat(newChat)) {
+                            is Resource.Success<*> -> {
+                                val chat = createResult.data as Chat
+                                _uiState.update { it.copy(isLoading = false) }
+                                onSuccess(chat.id)
+                            }
+                            is Resource.Error -> {
+                                _uiState.update { it.copy(isLoading = false, error = createResult.message) }
+                            }
+                            else -> {
+                                _uiState.update { it.copy(isLoading = false) }
+                            }
+                        }
+                    }
                 }
                 is Resource.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = createResult.message) }
+                    // En cas d'erreur lors de la recherche, créer une nouvelle conversation
+                    println("DEBUG: Erreur lors de la recherche de conversation existante: ${findResult.message}")
+                    val newChat = Chat(
+                        type = ChatType.DIRECT,
+                        participants = listOf(currentUserId, userId),
+                        unreadCount = mapOf(currentUserId to 0, userId to 0)
+                    )
+                    
+                    when (val createResult = chatRepository.createChat(newChat)) {
+                        is Resource.Success<*> -> {
+                            val chat = createResult.data as Chat
+                            _uiState.update { it.copy(isLoading = false) }
+                            onSuccess(chat.id)
+                        }
+                        is Resource.Error -> {
+                            _uiState.update { it.copy(isLoading = false, error = createResult.message) }
+                        }
+                        else -> {
+                            _uiState.update { it.copy(isLoading = false) }
+                        }
+                    }
                 }
                 else -> {
                     _uiState.update { it.copy(isLoading = false) }

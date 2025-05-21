@@ -1,8 +1,10 @@
 package com.example.projectmanager.data.repository
 
 import com.example.projectmanager.data.model.Chat
+import com.example.projectmanager.data.model.ChatType
 import com.example.projectmanager.data.model.Message
 import com.example.projectmanager.data.model.MessageStatus
+import com.example.projectmanager.data.model.MessageType
 import com.example.projectmanager.util.Resource
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -77,7 +79,49 @@ class FirebaseChatRepository @Inject constructor(
                     return@addSnapshotListener
                 }
 
-                val messages = snapshot?.documents?.mapNotNull { it.toObject<Message>() } ?: emptyList()
+                // Récupérer les documents bruts pour déboguer
+                val rawMessages = snapshot?.documents?.map { doc ->
+                    mapOf(
+                        "id" to doc.id,
+                        "sender_id" to doc.getString("sender_id"),
+                        "content" to doc.getString("content").orEmpty().take(20)
+                    )
+                }
+                println("DEBUG RAW: Raw message data from Firestore: $rawMessages")
+
+                val messages = snapshot?.documents?.mapNotNull { doc ->
+                    // Récupérer manuellement les champs pour s'assurer qu'ils sont correctement mappés
+                    val id = doc.id
+                    val senderId = doc.getString("sender_id") ?: ""
+                    val chatId = doc.getString("chat_id") ?: ""
+                    val content = doc.getString("content") ?: ""
+                    val senderName = doc.getString("sender_name")
+                    val typeStr = doc.getString("type") ?: "TEXT"
+                    val type = try { MessageType.valueOf(typeStr) } catch (e: Exception) { MessageType.TEXT }
+                    val sentAt = doc.getTimestamp("sent_at")?.toDate() ?: Date()
+                    val statusStr = doc.getString("status") ?: "SENT"
+                    val status = try { MessageStatus.valueOf(statusStr) } catch (e: Exception) { MessageStatus.SENT }
+                    val readBy = (doc.get("read_by") as? List<*>)?.filterIsInstance<String>() ?: listOf()
+                    
+                    // Créer le message avec les valeurs extraites manuellement
+                    val message = Message(
+                        id = id,
+                        chatId = chatId,
+                        senderId = senderId.trim(), // Nettoyer l'ID pour éviter les problèmes d'espaces
+                        senderName = senderName,
+                        content = content,
+                        type = type,
+                        sentAt = sentAt,
+                        status = status,
+                        readBy = readBy
+                    )
+                    
+                    // Déboguer chaque message
+                    println("DEBUG LOAD: Message ID: $id, senderId: '$senderId', content: '${content.take(20)}...'")
+                    
+                    message
+                } ?: emptyList()
+                
                 println("DEBUG: Loaded ${messages.size} messages for chat $chatId")
                 trySend(Resource.Success(messages))
             }
@@ -133,33 +177,57 @@ class FirebaseChatRepository @Inject constructor(
     override suspend fun sendMessage(message: Message): Resource<Message> {
         return try {
             val messageRef = if (message.id.isBlank()) {
-                messagesCollection.document()
+                messagesCollection.document() // Firestore génère un ID si absent
             } else {
                 messagesCollection.document(message.id)
             }
 
-            val messageWithId = message.copy(
-                id = messageRef.id,
-                status = if (message.status == MessageStatus.SENDING) {
-                    MessageStatus.SENT
-                } else {
-                    message.status
-                }
+            // Nettoyage et validation rigoureux du senderId
+            val finalSenderId = (message.senderId?.trim())?.takeIf { it.isNotBlank() } ?: "unknown_sender_in_repo"
+            
+            println("DEBUG SEND REPO: Attempting to send. Original senderId: '${message.senderId}', Final senderId for Firestore: '$finalSenderId', Message ID for Firestore: '${messageRef.id}'")
+
+            // Créer une map explicite des champs à sauvegarder pour s'assurer que les noms de champs sont corrects
+            val messageData = mapOf(
+                "id" to messageRef.id,
+                "chat_id" to message.chatId,
+                "sender_id" to finalSenderId,  // Utiliser le senderId nettoyé et validé
+                "sender_name" to message.senderName,
+                "content" to message.content,
+                "type" to message.type.toString(),
+                "status" to MessageStatus.SENT.toString(),
+                "sent_at" to (message.sentAt ?: Date()),
+                "read_by" to (message.readBy ?: listOf(finalSenderId))
             )
 
-            // Update message
-            messageRef.set(messageWithId).await()
+            // Sauvegarder les données explicites
+            messageRef.set(messageData).await()
 
-            // Update chat's last message and timestamp
-            chatsCollection.document(message.chatId).update(
+            // Créer un objet Message pour le retour et la mise à jour du chat
+            val messageToStore = Message(
+                id = messageRef.id,
+                chatId = message.chatId,
+                senderId = finalSenderId,
+                senderName = message.senderName,
+                content = message.content,
+                type = message.type,
+                status = MessageStatus.SENT,
+                sentAt = message.sentAt ?: Date(),
+                readBy = message.readBy ?: listOf(finalSenderId)
+            )
+
+            // Mettre à jour le dernier message du chat
+            chatsCollection.document(messageToStore.chatId).update(
                 mapOf(
-                    "last_message" to messageWithId,
+                    "last_message" to messageData,  // Utiliser la map explicite pour cohérence
                     "updated_at" to Date()
                 )
             ).await()
 
-            Resource.Success(messageWithId)
+            println("DEBUG SEND REPO: Message successfully stored with senderId: '$finalSenderId'")
+            Resource.Success(messageToStore)
         } catch (e: Exception) {
+            println("ERROR SEND REPO: Failed to send message: ${e.message}")
             Resource.Error(e.message ?: "Failed to send message")
         }
     }
@@ -244,6 +312,42 @@ class FirebaseChatRepository @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Failed to delete chat")
+        }
+    }
+    
+    override suspend fun findDirectChat(user1Id: String, user2Id: String): Resource<Chat?> {
+        return try {
+            // We need to check both possible arrangements of participants
+            // since we don't know the order in which they were stored
+            val participants1 = listOf(user1Id, user2Id)
+            val participants2 = listOf(user2Id, user1Id)
+            
+            // Query for chats that have exactly these two participants and are direct chats
+            val query = chatsCollection
+                .whereEqualTo("type", ChatType.DIRECT)
+                .whereArrayContainsAny("participants", participants1)
+                .get()
+                .await()
+                
+            // Filter results to ensure we have exactly the two participants we want
+            val matchingChats = query.documents.mapNotNull { doc ->
+                val chat = doc.toObject<Chat>()
+                // Check if the chat has exactly our two participants (no more, no less)
+                if (chat != null && 
+                    chat.participants.size == 2 && 
+                    chat.participants.containsAll(participants1)) {
+                    chat
+                } else {
+                    null
+                }
+            }
+            
+            // Return the most recently updated chat if multiple exist
+            val mostRecentChat = matchingChats.maxByOrNull { it.updatedAt }
+            
+            Resource.Success(mostRecentChat)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to find direct chat")
         }
     }
 } 
